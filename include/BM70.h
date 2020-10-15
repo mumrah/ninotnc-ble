@@ -2,9 +2,8 @@
 #define BM70_H
 
 #include <Arduino.h>
-#include "SoftwareSerial.h"
 
-#define BM70_DEFAULT_TIMEOUT          20
+#define BM70_DEFAULT_TIMEOUT          50
 #define BM70_RESPONSE_BUFF_SIZE       1  // 3
 #define BM70_TRANSPARENT_BUFF_SIZE    1  // 10
 #define BM70_RESPONSE_MAX_SIZE        30 // 50
@@ -66,15 +65,16 @@ class BM70
 {
 public:
 	BM70();
-	BM70(SoftwareSerial * initSerial, uint32_t baudrate, RxCallback callback);
+	BM70(HardwareSerial * initSerial, uint32_t baudrate, RxCallback callback);
 
 	// Low level functions
 	void write0 (uint8_t opCode);
     void write1 (uint8_t opCode, uint8_t param);
-    void write (uint8_t opCode, uint8_t * params, uint8_t len);
-	int read ();
-	int read (Result *result);
-	int read (Result *result, uint16_t timeout);
+	void write (uint8_t opCode, uint8_t * params, uint8_t len);
+    uint8_t write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t timeout);
+	uint8_t read ();
+	uint8_t read (Result *result);
+	uint8_t read (Result *result, uint16_t timeout);
 
 	void reset();
 	void updateStatus();
@@ -87,10 +87,10 @@ public:
 	uint8_t connection();
 
 private:
-	SoftwareSerial * serial;
+	HardwareSerial * serial;
 	RxCallback rxCallback;
 
-	uint8_t rxBuffer[100];
+	uint8_t rxBuffer[200];
 	uint8_t currentStatus;
 	Result lastResult;
 

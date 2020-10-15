@@ -5,7 +5,7 @@
 BM70::BM70()
 { }
 
-BM70::BM70(SoftwareSerial * initSerial, uint32_t baudrate, RxCallback callback)
+BM70::BM70(HardwareSerial * initSerial, uint32_t baudrate, RxCallback callback)
 {
 	serial = initSerial;
     rxCallback = callback;
@@ -20,7 +20,7 @@ BM70::BM70(SoftwareSerial * initSerial, uint32_t baudrate, RxCallback callback)
  * Some events will be automatically handled to update our internal state,
  * others will be passed on to the callback.
  */
-int BM70::read()
+uint8_t BM70::read()
 {
     if (read(&lastResult) != 0)
         return -1;
@@ -108,17 +108,17 @@ int BM70::read()
     return 0;
 }
 
-int BM70::read(Result *result) 
+uint8_t BM70::read(Result *result) 
 { 
     return read(result, BM70_DEFAULT_TIMEOUT);    
 }
 
-int BM70::read(Result *result, uint16_t timeout)
+uint8_t BM70::read(Result *result, uint16_t timeout)
 {
 #ifdef DEBUG
     //Serial.println("read");
 #endif
-    uint32_t t = millis();
+    uint64_t t = millis();
     while (serial->available() == 0)
     {
         if ((millis() - t) > timeout) 
@@ -205,6 +205,11 @@ void BM70::write1 (uint8_t opCode, uint8_t param)
 
 void BM70::write (uint8_t opCode, uint8_t * params, uint8_t len)
 {
+    write(opCode, params, len, BM70_DEFAULT_TIMEOUT);
+}
+
+uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t timeout)
+{
     uint8_t h  = (uint8_t) ((1 + len) >> 8);
 	uint8_t l  = (uint8_t) (1 + len);
 	uint8_t checksum = 0 - h - l - opCode;
@@ -222,8 +227,16 @@ void BM70::write (uint8_t opCode, uint8_t * params, uint8_t len)
 		buffer[i + 4] = params[i];
     }
 	buffer[len + 4] = checksum;
+    
+    uint64_t t = millis();
 
-    serial -> write(buffer, len + 5);
+    while (serial -> availableForWrite() < len + 5)
+    {
+        if ((millis() - t) > timeout) 
+            return -1;
+        delay(1);
+    }
+    serial -> write(buffer, len + 5); 
 #ifdef DEBUG
     char sbuffer[100];
     sprintf (sbuffer, "write: h=%d l=%d op=%02x checksum=%02x \n", h, l, opCode, checksum);
@@ -234,6 +247,7 @@ void BM70::write (uint8_t opCode, uint8_t * params, uint8_t len)
     }
     Serial.println();
 #endif
+    return len + 5;
 }
 
 // Commands and such

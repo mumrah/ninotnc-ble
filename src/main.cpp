@@ -4,15 +4,11 @@
 
 //#define DEBUG
 
-SoftwareSerial bleSerial(2, 3);
+HardwareSerial bleSerial = Serial;
 BM70 bm70;
 
-uint8_t serialBuffer[100];
-
-#ifndef DEBUG
-HardwareSerial tncSerial = Serial;
-#endif
-
+SoftwareSerial tncSerial(2, 3);
+uint8_t tncBuffer[100];
 
 //const uint8_t KTS_SERVICE_UUID[16] = {0x00, 0x00, 0x00, 0x01, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
 //const uint8_t KTS_RX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x03, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
@@ -31,68 +27,66 @@ const uint16_t TX_CHAR_HANDLE = 0x8001;
 
 uint64_t lastBeaconMs;
 
+
+void blink(uint8_t n, uint8_t t)
+{
+  for (uint8_t i=0; i<n; i++)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(t);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(t);
+  }
+}
+
 void rx_callback(uint8_t * buffer, uint8_t len)
 {
   // process rx data from BLE
-#ifdef DEBUG
-  Serial.println("rx_callback");
-  for (uint8_t i=0; i<len; i++)
-  {
-    Serial.print(buffer[i], HEX); Serial.print(" ");
-  }
-  Serial.println();
-#else
-  tncSerial.write(buffer, len);
-#endif
+  tncSerial.write(status, statusLen);
 }
 
 void setup() 
 {
-  // Pin modes
-  //pinMode(bm70RstPin, OUTPUT);
-  //pinMode(bm70ModePin, OUTPUT);
-
-  // Reset BM70
-  //digitalWrite(bm70ModePin, HIGH); // low = test mode, high = application mode
-  //digitalWrite(bm70RstPin, LOW);
-  //delay(20);
-  //digitalWrite(bm70RstPin, HIGH);
+  pinMode(LED_BUILTIN, OUTPUT);
+  blink(2, 50);
 
   // Setup UART
 #ifdef DEBUG
   Serial.begin(57600);
   Serial.println("Setup");
 #else
+  tncSerial.setTimeout(50UL); 
   tncSerial.begin(57600);
 #endif
 
-  bm70 = BM70(&bleSerial, 57600, rx_callback);
-  delay(2000);
+  bm70 = BM70(&Serial, 57600, rx_callback);
   
 #ifdef DEBUG
   Serial.println("Resetting BM70");
 #endif
+
   bm70.reset();
-  
-  lastBeaconMs = millis();
-  
-  //Serial.write(kiss, 32);
+  lastBeaconMs = 0;
 }
 
 void maybeBeaconToTnc()
 {
   uint64_t now = millis();
-  if ((now - lastBeaconMs) > 5000)
+  if ((now - lastBeaconMs) > 60000)
   {
-    //Serial.println("Sending test packet to BM70");
-    bm70.send(status, statusLen);
+    if (bm70.status() == BM70_STATUS_CONNECTED)
+    {
+      bm70.send(status, statusLen);
+      //blink(3, 50);
+    }
+    //tncSerial.write(status, statusLen);
     lastBeaconMs = now;
   }
 }
 
 void loop() 
 {
-  delay(10);
+  //delay(100);
   // Read off pending data and process events
   bm70.read();
 
@@ -103,9 +97,9 @@ void loop()
     Serial.println("Learning our status");
 #endif
     bm70.updateStatus();
+    //blink(1, 50);
     return;
   }
-
 
   // Start advertising
   if (bm70.status() == BM70_STATUS_IDLE)
@@ -114,6 +108,7 @@ void loop()
     Serial.println("Enter standby mode");
 #endif
     bm70.enableAdvertise();
+    //blink(2, 50);
     return;
   }
 
@@ -125,11 +120,12 @@ void loop()
 
   maybeBeaconToTnc();
 
-#ifndef DEBUG
   if (tncSerial.available())
   {
-    uint8_t read = tncSerial.readBytes(serialBuffer, 100);
-    bm70.send(serialBuffer, read);
+    uint8_t read = tncSerial.readBytes(tncBuffer, 100);
+    if (read > 0)
+    {
+      bm70.send(tncBuffer, read);
+    }
   }
-#endif
 }
