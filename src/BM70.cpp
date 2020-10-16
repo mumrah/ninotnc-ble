@@ -1,7 +1,5 @@
 #include "BM70.h"
 
-//#define DEBUG
-
 BM70::BM70()
 { }
 
@@ -28,9 +26,6 @@ uint8_t BM70::read()
     if (lastResult.opCode == 0) 
         return -1;
 
-#ifdef DEBUG
-    Serial.print("Read op code "); Serial.println(lastResult.opCode, HEX);
-#endif
     switch (lastResult.opCode)
     {
         case 0x70:
@@ -46,16 +41,10 @@ uint8_t BM70::read()
 				for (uint8_t i = 0; i < 6; i++)
 					address += (((uint64_t) lastResult.params[i + 4]) << (8 * i));
                 connectionAddress = address;
-#ifdef DEBUG
-                Serial.print("New connection "); Serial.println(connectionHandle, HEX);
-#endif
             }
             else
             {
                 // failed, ignore
-#ifdef DEBUG
-                Serial.println("Failed connection");
-#endif
             }
             break;
         case 0x72:
@@ -68,9 +57,6 @@ uint8_t BM70::read()
             // Command Complete Event, ignore
             uint8_t command = lastResult.params[0];
             uint8_t result = lastResult.params[1];
-#ifdef DEBUG
-            Serial.print("Command Complete "); Serial.print(command, HEX); Serial.println(result, HEX);
-#endif
             break;
         }   
         case 0x81:
@@ -78,9 +64,6 @@ uint8_t BM70::read()
             if (currentStatus != lastResult.params[0])
             {
                 currentStatus = lastResult.params[0];
-#ifdef DEBUG
-                Serial.print("We changed state to "); Serial.println(currentStatus, HEX);
-#endif
             }  
             break;
         case 0x98:
@@ -88,9 +71,6 @@ uint8_t BM70::read()
             // Client Write Characteristic
             // uint8_t handle = lastResult.params[0];
             // TODO check connection handle and characteristic handle
-            #ifdef DEBUG
-                Serial.println("Client write");
-            #endif
             uint16_t char_handle = 0;
             char_handle += (lastResult.params[1] << 8) + lastResult.params[2];
             for (uint8_t i = 0; i < lastResult.len - 3; i++)
@@ -99,9 +79,6 @@ uint8_t BM70::read()
             break;
         }
         default:
-#ifdef DEBUG
-            Serial.print("Unsupported opcode "); Serial.println(lastResult.opCode, HEX);
-#endif
             // Unsupported, ignore
             break;
     }
@@ -115,9 +92,6 @@ uint8_t BM70::read(Result *result)
 
 uint8_t BM70::read(Result *result, uint16_t timeout)
 {
-#ifdef DEBUG
-    //Serial.println("read");
-#endif
     uint64_t t = millis();
     while (serial->available() == 0)
     {
@@ -137,23 +111,10 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
         delay(1);
     }
 
-#ifdef DEBUG
-    Serial.println("Got sync word");
-    Serial.flush();
-    delay(100);
-#endif
-
     uint8_t h = serial->read();
     uint8_t l = serial->read();
     result->opCode = serial->read();
     result->len = (((short) h) << 8 ) + l - 1;
-#ifdef DEBUG
-    char sbuffer[100];
-    sprintf (sbuffer, "read: h=%d l=%d op=%02x\n", h, l, result->opCode);
-    Serial.print(sbuffer);   
-    Serial.flush();
-    delay(100); 
-#endif
     uint8_t n = serial->readBytes(result->params, result->len);
     
     result->checksum = serial->read();
@@ -170,23 +131,9 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     }
     checksum += result->checksum;
 
-#ifdef DEBUG
-    Serial.print("Checksum "); Serial.println(checksum, HEX); 
-    Serial.flush();
-    delay(100); 
-#endif
     if (checksum != 0) {
-        // error
-#ifdef DEBUG
-        Serial.println("checksum error on read");
-        for (uint16_t i = 0; i < result->len; i++)
-        {
-            Serial.print(result->params[i], HEX); Serial.print(" ");
-        }
-        Serial.println();
-        Serial.flush();
-        delay(100); 
-#endif
+        // error, what now?
+        return -3;
     }
     return 0;
 }
@@ -213,7 +160,6 @@ uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t tim
     uint8_t h  = (uint8_t) ((1 + len) >> 8);
 	uint8_t l  = (uint8_t) (1 + len);
 	uint8_t checksum = 0 - h - l - opCode;
-    //Serial.println("write");
     
     uint8_t buffer[len + 5];
     buffer[0] = 0xAA;
@@ -237,16 +183,6 @@ uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t tim
         delay(1);
     }
     serial -> write(buffer, len + 5); 
-#ifdef DEBUG
-    char sbuffer[100];
-    sprintf (sbuffer, "write: h=%d l=%d op=%02x checksum=%02x \n", h, l, opCode, checksum);
-    Serial.print(sbuffer);
-    for (uint16_t i = 0; i < len; i++)
-    {
-        Serial.print(params[i], HEX); Serial.print(" ");
-    }
-    Serial.println();
-#endif
     return len + 5;
 }
 
@@ -259,7 +195,6 @@ void BM70::reset()
 
 void BM70::updateStatus()
 {
-    //Serial.println("Update our status");
     write0(BM70_OP_READ_STATUS);
     //readCommandResponse();
 }

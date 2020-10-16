@@ -2,13 +2,11 @@
 #include "BM70.h"
 #include "SoftwareSerial.h"
 
-//#define DEBUG
-
 HardwareSerial bleSerial = Serial;
 BM70 bm70;
 
 SoftwareSerial tncSerial(2, 3);
-uint8_t tncBuffer[100];
+uint8_t tncBuffer[256];
 
 //const uint8_t KTS_SERVICE_UUID[16] = {0x00, 0x00, 0x00, 0x01, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
 //const uint8_t KTS_RX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x03, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
@@ -50,26 +48,16 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   blink(2, 50);
 
-  // Setup UART
-#ifdef DEBUG
-  Serial.begin(57600);
-  Serial.println("Setup");
-#else
   tncSerial.setTimeout(50UL); 
   tncSerial.begin(57600);
-#endif
 
   bm70 = BM70(&Serial, 57600, rx_callback);
-  
-#ifdef DEBUG
-  Serial.println("Resetting BM70");
-#endif
-
   bm70.reset();
+
   lastBeaconMs = 0;
 }
 
-void maybeBeaconToTnc()
+void maybeBeaconToBLE()
 {
   uint64_t now = millis();
   if ((now - lastBeaconMs) > 60000)
@@ -86,29 +74,20 @@ void maybeBeaconToTnc()
 
 void loop() 
 {
-  //delay(100);
   // Read off pending data and process events
   bm70.read();
 
   // Need to know our status
   if (bm70.status() == BM70_STATUS_UNKNOWN)
   {
-#ifdef DEBUG
-    Serial.println("Learning our status");
-#endif
     bm70.updateStatus();
-    //blink(1, 50);
     return;
   }
 
   // Start advertising
   if (bm70.status() == BM70_STATUS_IDLE)
   {
-#ifdef DEBUG
-    Serial.println("Enter standby mode");
-#endif
     bm70.enableAdvertise();
-    //blink(2, 50);
     return;
   }
 
@@ -118,11 +97,12 @@ void loop()
     return;
   }
 
-  maybeBeaconToTnc();
+  maybeBeaconToBLE();
 
+  // If there is data waiting from the TNC, read it and pass to BLE
   if (tncSerial.available())
   {
-    uint8_t read = tncSerial.readBytes(tncBuffer, 100);
+    uint8_t read = tncSerial.readBytes(tncBuffer, 256);
     if (read > 0)
     {
       bm70.send(tncBuffer, read);

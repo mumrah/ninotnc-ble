@@ -90,7 +90,7 @@ private:
 	HardwareSerial * serial;
 	RxCallback rxCallback;
 
-	uint8_t rxBuffer[200];
+	uint8_t rxBuffer[100];
 	uint8_t currentStatus;
 	Result lastResult;
 
