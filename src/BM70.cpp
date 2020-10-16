@@ -54,7 +54,7 @@ uint8_t BM70::read()
             break;
         case 0x80:
         {
-            // Command Complete Event, ignore
+            // Command Complete Event, ignore for now
             uint8_t command = lastResult.params[0];
             uint8_t result = lastResult.params[1];
             break;
@@ -121,7 +121,6 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
 
     if (n < result->len) {
         // underflow
-        //Serial.println("underflow");
         return -2;
     }
 
@@ -205,7 +204,6 @@ uint8_t BM70::status() {
 
 void BM70::enableAdvertise()
 {
-    // enter standby 0x01
     write1(BM70_OP_ADVERTISE_ENABLE, 0x01); 
     //readCommandResponse();
 }
@@ -216,6 +214,7 @@ uint8_t BM70::connection()
 }
 
 
+// TODO probably don't need this
 void BM70::discoverCharacteristics(const uint8_t * serviceUUID)
 {
     uint8_t params[17]; // connection handle byte + 128 bit uuid
