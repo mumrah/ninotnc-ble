@@ -108,7 +108,7 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
         if ((millis() - t) > timeout) 
             return -1;
         d = serial->read();
-        delay(1);
+        //delay(1);
     }
 
     uint8_t h = serial->read();
@@ -179,7 +179,7 @@ uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t tim
     {
         if ((millis() - t) > timeout) 
             return -1;
-        delay(1);
+        //delay(1);
     }
     serial -> write(buffer, len + 5); 
     return len + 5;
@@ -241,7 +241,7 @@ void BM70::send(const uint8_t * data, uint8_t len)
         if (offset == 23)
         {
             write(BM70_OP_SEND_CHAR, params, offset);
-            delay(10);
+            //delay(10);
             offset = 3;
         }
     }
@@ -249,6 +249,6 @@ void BM70::send(const uint8_t * data, uint8_t len)
     if (offset > 3)
     {
         write(BM70_OP_SEND_CHAR, params, offset);
-        delay(10);
+        //delay(10);
     }
 }

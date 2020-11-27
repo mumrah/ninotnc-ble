@@ -1,16 +1,15 @@
-#include <Arduino.h>
-#include "BM70.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/atomic.h>
 #include "SoftwareSerial.h"
+#include "Arduino.h"
+#include "BM70.h"
 
-HardwareSerial bleSerial = Serial;
 BM70 bm70;
 
-SoftwareSerial tncSerial(2, 3);
-uint8_t tncBuffer[256];
-
-//const uint8_t KTS_SERVICE_UUID[16] = {0x00, 0x00, 0x00, 0x01, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
-//const uint8_t KTS_RX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x03, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
-//const uint8_t KTS_TX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x02, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
+HardwareSerial bleSerial = Serial;
+HardwareSerial tncSerial = Serial1;
+SoftwareSerial debug(10, 11);
 
 // APRS Status payload "NinoTNC BLE is working!"
 const uint8_t status[43] = {
@@ -20,23 +19,55 @@ const uint8_t status[43] = {
 };
 const uint8_t statusLen = 43;
 
-// BLE handles
-const uint16_t SERVICE_HANDLE = 0x8000;
-const uint16_t RX_CHAR_HANDLE = 0x8003;
-const uint16_t TX_CHAR_HANDLE = 0x8001;
+uint8_t tncBuffer[256];
+unsigned long last_tnc_write;
 
-// Arduino to BLE beacon, for testing
-uint64_t lastBeaconMs;
+#define CTC_MATCH_OVERFLOW ((F_CPU / 1000) / 64) 
 
-void blink(uint8_t n, uint8_t t)
+unsigned long then_ms;
+
+typedef struct {
+    int durations[10];
+    int duration_len;
+    int duration_idx;
+} blink_t; 
+
+blink_t blink;
+
+void blinkRx()
 {
-  for (uint8_t i=0; i<n; i++)
-  {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(t);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(t);
+  // . _ . TODO fix these
+  blink_t r = {{1, 1, 3, 1, 1, 7}, 6, 0};
+  blink = r;
+  PORTD &= ~(1 << PD5);
+}
+
+void blinkTx()
+{
+  // - 
+  blink_t two = {{3, 7}, 2, 0};
+  blink = two;
+  PORTD &= ~(1 << PD5);
+}
+
+void blinkThree()
+{
+  blink_t three = {{3, 1, 1, 1, 1, 1, 1, 7}, 8, 0};
+  blink = three;
+  PORTD &= ~(1 << PD5);
+}
+
+int blink_tick(blink_t * blink)
+{
+  if (blink->duration_idx >= blink->duration_len)
+    return -1;
+
+  if (--blink->durations[blink->duration_idx] == 0) {
+      PORTD ^= (1 << PD5);
+      blink->duration_idx++;
+      return 1;
   }
+  return 0;
 }
 
 void rx_callback(uint8_t * buffer, uint8_t len)
@@ -45,68 +76,64 @@ void rx_callback(uint8_t * buffer, uint8_t len)
   tncSerial.write(status, statusLen);
 }
 
-void setup() 
+void setup()
 {
-  pinMode(LED_BUILTIN, OUTPUT);
-  blink(2, 50);
+  cli();
+  TCCR1A = 0; // Normal timer operation. User timer1 (16bit) for longer count
+  TCCR1B = 0;
+  TCNT1 = 0; // Clear timer counter register
 
-  tncSerial.setTimeout(100);
-  tncSerial.begin(57600);
+  OCR1A = CTC_MATCH_OVERFLOW;  // Timer reset value, triggers the interupt
 
-  bm70 = BM70(&Serial, 57600, rx_callback);
+  TCCR1B |= (1 << WGM12); // CTC mode (Clear Timer on Compare)
+  TCCR1B |= (1 << CS10); // Set C10 and C11 for 64 prescaler
+  TCCR1B |= (1 << CS11);
+  TIMSK1 |= (1 << OCIE1A); // Enable timer compare interrupt
+  
+  DDRD |= (1 << PD5);
+  
+  sei();
+
+  PORTD |= (1 << PD5);
+  blink = {{}, 0, 0};
+
+  debug.begin(57600);
+
+  bm70 = BM70(&bleSerial, 57600, rx_callback);
   bm70.reset();
-
-  lastBeaconMs = 0;
+  
+  tncSerial.begin(57600);
 }
 
-void maybeBeaconToBLE()
-{
-  uint64_t now = millis();
-  if ((now - lastBeaconMs) > 60000)
-  {
-    if (bm70.status() == BM70_STATUS_CONNECTED)
-    {
-      bm70.send(status, statusLen);
+void loop() {
+  unsigned long now = millis();
+  if (now - then_ms > 100) {
+      then_ms = now;
+      if (blink_tick(&blink) == -1) // -1 is done sending last blink
+      {
+        //blinkThree();
+        debug.println("three");
+      } 
+  }
+
+  if (Serial1.available()) {
+    Serial1.readBytes(tncBuffer, 256);
+    blinkRx();
+  }
+
+  if (now - last_tnc_write > 10000) {
+    if (Serial1.availableForWrite()) {
+      Serial1.write(status, statusLen);
+      blinkTx();
+      last_tnc_write = now;
     }
-    //tncSerial.write(status, statusLen);
-    lastBeaconMs = now;
   }
 }
 
-void loop() 
+int main()
 {
-  // Read off pending data and process events
-  bm70.read();
-
-  // Need to know our status
-  if (bm70.status() == BM70_STATUS_UNKNOWN)
-  {
-    bm70.updateStatus();
-    return;
-  }
-
-  // Start advertising
-  if (bm70.status() == BM70_STATUS_IDLE)
-  {
-    bm70.enableAdvertise();
-    return;
-  }
-
-    // No connection, no need to continue
-  if (bm70.connection() == 0x00)
-  {
-    return;
-  }
-
-  maybeBeaconToBLE();
-
-  // If there is data waiting from the TNC, read it and pass to BLE
-  if (tncSerial.available())
-  {
-    uint8_t read = tncSerial.readBytes(tncBuffer, 256);
-    if (read > 0)
-    {
-      bm70.send(tncBuffer, read);
-    }
-  }
+  setup();
+  while (1==1) 
+    loop();
+  return 0;
 }

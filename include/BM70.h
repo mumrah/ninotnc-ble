@@ -1,7 +1,8 @@
 #ifndef BM70_H
 #define BM70_H
 
-#include <Arduino.h>
+#include "HardwareSerial.h"
+#include "utils.h"
 
 #define BM70_DEFAULT_TIMEOUT          50
 #define BM70_RESPONSE_BUFF_SIZE       1  // 3
