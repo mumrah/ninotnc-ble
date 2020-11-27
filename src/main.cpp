@@ -2,8 +2,10 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 #include "SoftwareSerial.h"
-#include "Arduino.h"
+#include "HardwareSerial.h"
+
 #include "BM70.h"
+#include "utils.h"
 
 BM70 bm70;
 
