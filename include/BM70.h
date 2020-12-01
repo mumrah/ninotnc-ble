@@ -1,8 +1,7 @@
 #ifndef BM70_H
 #define BM70_H
 
-#include "HardwareSerial.h"
-#include "utils.h"
+#include "Arduino.h"
 
 #define BM70_DEFAULT_TIMEOUT          50
 #define BM70_RESPONSE_BUFF_SIZE       1  // 3
@@ -69,9 +68,9 @@ public:
 	BM70(HardwareSerial * initSerial, uint32_t baudrate, RxCallback callback);
 
 	// Low level functions
-	void write0 (uint8_t opCode);
-    void write1 (uint8_t opCode, uint8_t param);
-	void write (uint8_t opCode, uint8_t * params, uint8_t len);
+	uint8_t write0 (uint8_t opCode);
+	uint8_t write1 (uint8_t opCode, uint8_t param);
+	uint8_t write (uint8_t opCode, uint8_t * params, uint8_t len);
     uint8_t write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t timeout);
 	uint8_t read ();
 	uint8_t read (Result *result);

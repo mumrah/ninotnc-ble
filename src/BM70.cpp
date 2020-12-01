@@ -1,4 +1,5 @@
 #include "BM70.h"
+#include "timer1.h"
 
 BM70::BM70()
 { }
@@ -92,10 +93,10 @@ uint8_t BM70::read(Result *result)
 
 uint8_t BM70::read(Result *result, uint16_t timeout)
 {
-    uint64_t t = millis();
+    uint64_t t = millis1();
     while (serial->available() == 0)
     {
-        if ((millis() - t) > timeout) 
+        if ((millis1() - t) > timeout) 
             return -1;
     }  
 
@@ -105,17 +106,17 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     // read until we find sync word 0xAA
     while (d != 0xAA) 
     {
-        if ((millis() - t) > timeout) 
+        if ((millis1() - t) > timeout) 
             return -1;
         d = serial->read();
-        //delay(1);
+        delay1(1);
     }
 
     uint8_t h = serial->read();
     uint8_t l = serial->read();
     result->opCode = serial->read();
     result->len = (((short) h) << 8 ) + l - 1;
-    uint8_t n = serial->readBytes(result->params, result->len);
+    uint8_t n = readBytes(serial, result->params, result->len);
     
     result->checksum = serial->read();
 
@@ -137,21 +138,21 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     return 0;
 }
 
-void BM70::write0 (uint8_t opCode)
+uint8_t BM70::write0 (uint8_t opCode)
 {
-    write(opCode, NULL, 0);
+    return write(opCode, NULL, 0);
 }
 
-void BM70::write1 (uint8_t opCode, uint8_t param)
+uint8_t BM70::write1 (uint8_t opCode, uint8_t param)
 {
     uint8_t params[1];
     params[0] = param;
-    write(opCode, params, 1);
+    return write(opCode, params, 1);
 }
 
-void BM70::write (uint8_t opCode, uint8_t * params, uint8_t len)
+uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len)
 {
-    write(opCode, params, len, BM70_DEFAULT_TIMEOUT);
+    return write(opCode, params, len, BM70_DEFAULT_TIMEOUT);
 }
 
 uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t timeout)
@@ -173,13 +174,12 @@ uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t tim
     }
 	buffer[len + 4] = checksum;
     
-    uint64_t t = millis();
-
+    uint64_t start = millis1();
     while (serial -> availableForWrite() < len + 5)
     {
-        if ((millis() - t) > timeout) 
+        if ((millis1() - start) > timeout) 
             return -1;
-        //delay(1);
+        delay1(1);
     }
     serial -> write(buffer, len + 5); 
     return len + 5;
@@ -241,7 +241,7 @@ void BM70::send(const uint8_t * data, uint8_t len)
         if (offset == 23)
         {
             write(BM70_OP_SEND_CHAR, params, offset);
-            //delay(10);
+            delay1(10);
             offset = 3;
         }
     }
@@ -249,6 +249,6 @@ void BM70::send(const uint8_t * data, uint8_t len)
     if (offset > 3)
     {
         write(BM70_OP_SEND_CHAR, params, offset);
-        //delay(10);
+        delay1(10);
     }
 }

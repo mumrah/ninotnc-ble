@@ -1,19 +1,14 @@
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/atomic.h>
+#define F_CPU 7372800L
+#define CTC_MATCH_OVERFLOW ((F_CPU / 1000) / 64) 
+
+#define BLESerial Serial
+#define NinoTNCSerial Serial1
+
+#include "Arduino.h"
 #include "SoftwareSerial.h"
-#include "HardwareSerial.h"
-
+#include "timer1.h"
 #include "BM70.h"
-#include "utils.h"
 
-BM70 bm70;
-
-HardwareSerial bleSerial = Serial;
-HardwareSerial tncSerial = Serial1;
-SoftwareSerial debug(10, 11);
-
-// APRS Status payload "NinoTNC BLE is working!"
 const uint8_t status[43] = {
   0xc0, 0x00, 0x82, 0xa0, 0xb4, 0x84, 0x98, 0x8a, 0x80, 0x96, 0x68, 0x88, 0x84, 0xb4, 0x40, 0x01, 
   0x03, 0xf0, 0x3e, 0x4e, 0x69, 0x6e, 0x6f, 0x54, 0x4e, 0x43, 0x20, 0x42, 0x4c, 0x45, 0x20, 0x69, 
@@ -21,65 +16,20 @@ const uint8_t status[43] = {
 };
 const uint8_t statusLen = 43;
 
+BM70 bm70;
+
+SoftwareSerial debug(PD6, PD7); // PD6, PD7
+
 uint8_t tncBuffer[256];
-unsigned long last_tnc_write;
-
-#define CTC_MATCH_OVERFLOW ((F_CPU / 1000) / 64) 
-
-unsigned long then_ms;
-
-typedef struct {
-    int durations[10];
-    int duration_len;
-    int duration_idx;
-} blink_t; 
-
-blink_t blink;
-
-void blinkRx()
-{
-  // . _ . TODO fix these
-  blink_t r = {{1, 1, 3, 1, 1, 7}, 6, 0};
-  blink = r;
-  PORTD &= ~(1 << PD5);
-}
-
-void blinkTx()
-{
-  // - 
-  blink_t two = {{3, 7}, 2, 0};
-  blink = two;
-  PORTD &= ~(1 << PD5);
-}
-
-void blinkThree()
-{
-  blink_t three = {{3, 1, 1, 1, 1, 1, 1, 7}, 8, 0};
-  blink = three;
-  PORTD &= ~(1 << PD5);
-}
-
-int blink_tick(blink_t * blink)
-{
-  if (blink->duration_idx >= blink->duration_len)
-    return -1;
-
-  if (--blink->durations[blink->duration_idx] == 0) {
-      PORTD ^= (1 << PD5);
-      blink->duration_idx++;
-      return 1;
-  }
-  return 0;
-}
 
 void rx_callback(uint8_t * buffer, uint8_t len)
 {
   // process rx data from BLE
-  tncSerial.write(status, statusLen);
+  debug.println("Got BLE data");
+  NinoTNCSerial.write(buffer, len);
 }
 
-void setup()
-{
+void setup() {
   cli();
   TCCR1A = 0; // Normal timer operation. User timer1 (16bit) for longer count
   TCCR1B = 0;
@@ -91,45 +41,62 @@ void setup()
   TCCR1B |= (1 << CS10); // Set C10 and C11 for 64 prescaler
   TCCR1B |= (1 << CS11);
   TIMSK1 |= (1 << OCIE1A); // Enable timer compare interrupt
-  
-  DDRD |= (1 << PD5);
-  
   sei();
 
-  PORTD |= (1 << PD5);
-  blink = {{}, 0, 0};
+  pinMode(PD5, OUTPUT);
 
-  debug.begin(57600);
+  digitalWrite(PD5, HIGH);
+  delay1(100);
+  digitalWrite(PD5, LOW);
+  delay1(100);
+  digitalWrite(PD5, HIGH);
+  delay1(100);
+  digitalWrite(PD5, LOW);
+  delay1(100);
 
-  bm70 = BM70(&bleSerial, 57600, rx_callback);
+  bm70 = BM70(&BLESerial, 115200, rx_callback);
   bm70.reset();
-  
-  tncSerial.begin(57600);
+
+  NinoTNCSerial.begin(57600);
+
+  debug.begin(9600);
+  debug.println("Setup");
 }
 
 void loop() {
-  unsigned long now = millis();
-  if (now - then_ms > 100) {
-      then_ms = now;
-      if (blink_tick(&blink) == -1) // -1 is done sending last blink
-      {
-        //blinkThree();
-        debug.println("three");
-      } 
+  debug.println("tick");
+  digitalWrite(PD5, HIGH);
+  delay1(50);
+  digitalWrite(PD5, LOW);
+  delay1(50);
+
+  // Read off pending data and process events
+  bm70.read();
+
+  // Need to know our status
+  if (bm70.status() == BM70_STATUS_UNKNOWN)
+  {
+    bm70.updateStatus();
+    return;
   }
 
-  if (Serial1.available()) {
-    Serial1.readBytes(tncBuffer, 256);
-    blinkRx();
+  // Start advertising
+  if (bm70.status() == BM70_STATUS_IDLE)
+  {
+    bm70.enableAdvertise();
+    return;
   }
 
-  if (now - last_tnc_write > 10000) {
-    if (Serial1.availableForWrite()) {
-      Serial1.write(status, statusLen);
-      blinkTx();
-      last_tnc_write = now;
+  // If there is data waiting from the TNC and we have a BLE connection, pass it through
+  if (NinoTNCSerial.available() > 0) {
+    debug.println("Reading TNC data");
+    uint8_t read = readBytes(&NinoTNCSerial, tncBuffer, 256);
+    debug.print("Read "); debug.print(read); debug.println(" bytes");
+    if (read > 0) { 
+      bm70.send(tncBuffer, read);
     }
   }
+
 }
 
 int main()
