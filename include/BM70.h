@@ -4,6 +4,8 @@
 #include "Arduino.h"
 
 #define BM70_DEFAULT_TIMEOUT          50
+#define BM70_STATUS_MAX_AGE_MS        3000
+
 #define BM70_RESPONSE_BUFF_SIZE       1  // 3
 #define BM70_TRANSPARENT_BUFF_SIZE    1  // 10
 #define BM70_RESPONSE_MAX_SIZE        30 // 50
@@ -49,6 +51,11 @@
 #define BM70_EVENT_CMD_COMPLETE       0x80
 #define BM70_EVENT_CLIENT_CHAR_WRITE  0x98
 
+const uint8_t KTS_SERVICE_UUID[16] = {0x00, 0x00, 0x00, 0x01, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
+const uint8_t KTS_RX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x03, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
+const uint8_t KTS_TX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x02, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
+
+
 struct Result {
   size_t opCode;
   uint8_t params[100];
@@ -71,15 +78,17 @@ public:
 	uint8_t write0 (uint8_t opCode);
 	uint8_t write1 (uint8_t opCode, uint8_t param);
 	uint8_t write (uint8_t opCode, uint8_t * params, uint8_t len);
-    uint8_t write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t timeout);
+  uint8_t write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t timeout);
 	uint8_t read ();
 	uint8_t read (Result *result);
 	uint8_t read (Result *result, uint16_t timeout);
+	uint8_t readCommandResponse(uint8_t opCode);
 
 	void reset();
 	void updateStatus();
 	void enableAdvertise();
 	void discoverCharacteristics(const uint8_t * serviceUUID);
+	void readCharacteristicValue(const uint8_t * serviceUUID);
 
 	void send(const uint8_t * data, uint8_t len);
 
@@ -99,6 +108,8 @@ private:
 
 	uint8_t rxCharHandle;
 	uint8_t txCharHandle;
+
+	unsigned long lastStatusUpdateMs;
 };
 
 #endif // ifndef BM70_H

@@ -1,5 +1,6 @@
 #include "BM70.h"
 #include "timer1.h"
+#include "config.h"
 
 BM70::BM70()
 { }
@@ -11,6 +12,7 @@ BM70::BM70(HardwareSerial * initSerial, uint32_t baudrate, RxCallback callback)
 	serial->begin (baudrate);
 	currentStatus = BM70_STATUS_UNKNOWN;
 	connectionHandle = 0x00;
+    lastStatusUpdateMs = 0L;
 }
 
 /**
@@ -20,10 +22,14 @@ BM70::BM70(HardwareSerial * initSerial, uint32_t baudrate, RxCallback callback)
  * others will be passed on to the callback.
  */
 uint8_t BM70::read()
-{
-    if (read(&lastResult) != 0)
-        return -1;
-    
+{  
+    uint8_t readResult = read(&lastResult);
+    if (readResult != 0) {
+        return readResult;
+    }
+
+    DebugSerial.print("BM70::read() -> ");
+    DebugSerial.print("opCode: "); DebugSerial.println(lastResult.opCode, HEX);
     if (lastResult.opCode == 0) 
         return -1;
 
@@ -37,31 +43,42 @@ uint8_t BM70::read()
             if (lastResult.params[0] == 0x00)
             {
                 // success
+                DebugSerial.println("BLE Connected");
                 connectionHandle = lastResult.params[1];
                 uint64_t address = 0;
 				for (uint8_t i = 0; i < 6; i++)
 					address += (((uint64_t) lastResult.params[i + 4]) << (8 * i));
                 connectionAddress = address;
+                currentStatus = BM70_STATUS_CONNECTED;
             }
             else
             {
                 // failed, ignore
+                DebugSerial.println("BLE Connection Failed!");
+                currentStatus = BM70_STATUS_UNKNOWN;
             }
             break;
         case 0x72:
             // LE Disconnect Event
+            DebugSerial.println("BLE Disconnected");
             connectionHandle = 0x00;
             connectionAddress = 0x00;
+            currentStatus = BM70_STATUS_UNKNOWN;
             break;
         case 0x80:
         {
             // Command Complete Event, ignore for now
             uint8_t command = lastResult.params[0];
             uint8_t result = lastResult.params[1];
+            DebugSerial.print("Command Complete: "); 
+            DebugSerial.print("command: "); DebugSerial.print(command, HEX);
+            DebugSerial.print(" result: "); DebugSerial.println(result, HEX);
             break;
         }   
         case 0x81:
             // Status Report Event
+            DebugSerial.print("BLE Status Report: "); DebugSerial.println(lastResult.params[0]);
+            lastStatusUpdateMs = millis1();
             if (currentStatus != lastResult.params[0])
             {
                 currentStatus = lastResult.params[0];
@@ -138,6 +155,23 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     return 0;
 }
 
+uint8_t BM70::readCommandResponse(uint8_t opCode) {
+    unsigned long start = millis1();
+    while ((millis1() - start) < BM70_DEFAULT_TIMEOUT) {
+        if (read() != -1) {
+            // Read something
+            if (lastResult.opCode == 0x80) {
+                uint8_t command = lastResult.params[0];
+                uint8_t result = lastResult.params[1];
+                if (command == opCode) {
+                    return result;
+                }
+            }
+        }   
+    }  
+    return -1; 
+}
+
 uint8_t BM70::write0 (uint8_t opCode)
 {
     return write(opCode, NULL, 0);
@@ -181,7 +215,11 @@ uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t tim
             return -1;
         delay1(1);
     }
+    DebugSerial.print("BM70::write() ->");
+    DebugSerial.print(" opCode: "); DebugSerial.print(opCode, HEX);
+    DebugSerial.print(" params: "); printBytes(params, len); DebugSerial.println();
     serial -> write(buffer, len + 5); 
+    serial -> flush();
     return len + 5;
 }
 
@@ -194,8 +232,11 @@ void BM70::reset()
 
 void BM70::updateStatus()
 {
-    write0(BM70_OP_READ_STATUS);
-    //readCommandResponse();
+    unsigned long now = millis1();
+    if (currentStatus == BM70_STATUS_UNKNOWN || (now - lastStatusUpdateMs) > BM70_STATUS_MAX_AGE_MS) {
+        write0(BM70_OP_READ_STATUS);
+        lastStatusUpdateMs = now;
+    }
 }
 
 uint8_t BM70::status() {
@@ -205,7 +246,9 @@ uint8_t BM70::status() {
 void BM70::enableAdvertise()
 {
     write1(BM70_OP_ADVERTISE_ENABLE, 0x01); 
-    //readCommandResponse();
+    if (readCommandResponse(BM70_OP_ADVERTISE_ENABLE) == 0) {
+        currentStatus = BM70_STATUS_STANDBY;
+    }
 }
 
 uint8_t BM70::connection()
@@ -222,6 +265,15 @@ void BM70::discoverCharacteristics(const uint8_t * serviceUUID)
     memcpy(params, serviceUUID, 16);
     write(0X31, params, 17);
     //readCommandResponse();
+}
+
+void BM70::readCharacteristicValue(const uint8_t * serviceUUID) {
+    if (connectionHandle != 0x00) {
+        uint8_t params[17]; // connection handle byte + 128 bit uuid
+        params[0] = connectionHandle;
+        memcpy(params+1, serviceUUID, 16);
+        write(BM70_OP_READ_CHAR_UUID, params, 17);  
+    }
 }
 
 void BM70::send(const uint8_t * data, uint8_t len)
@@ -242,6 +294,8 @@ void BM70::send(const uint8_t * data, uint8_t len)
         {
             write(BM70_OP_SEND_CHAR, params, offset);
             delay1(10);
+            readCommandResponse(BM70_OP_SEND_CHAR);
+            delay1(10);
             offset = 3;
         }
     }
@@ -249,6 +303,8 @@ void BM70::send(const uint8_t * data, uint8_t len)
     if (offset > 3)
     {
         write(BM70_OP_SEND_CHAR, params, offset);
+        delay1(10);
+        readCommandResponse(BM70_OP_SEND_CHAR);
         delay1(10);
     }
 }

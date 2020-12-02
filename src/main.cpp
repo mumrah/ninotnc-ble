@@ -1,13 +1,17 @@
 #define F_CPU 7372800L
 #define CTC_MATCH_OVERFLOW ((F_CPU / 1000) / 64) 
 
-#define BLESerial Serial
-#define NinoTNCSerial Serial1
-
-#include "Arduino.h"
-#include "SoftwareSerial.h"
+#include "config.h"
 #include "timer1.h"
 #include "BM70.h"
+
+void printBytes(uint8_t * bytes, size_t len) {
+  char hex[2];
+  for (size_t i=0; i<len; i++) {
+    sprintf(hex, "%02X ", bytes[i]);
+    DebugSerial.print(hex);
+  }
+}
 
 const uint8_t status[43] = {
   0xc0, 0x00, 0x82, 0xa0, 0xb4, 0x84, 0x98, 0x8a, 0x80, 0x96, 0x68, 0x88, 0x84, 0xb4, 0x40, 0x01, 
@@ -18,15 +22,22 @@ const uint8_t statusLen = 43;
 
 BM70 bm70;
 
-SoftwareSerial debug(PD6, PD7); // PD6, PD7
+SoftwareSerial DebugSerial(PD6, PD7);  
+
 
 uint8_t tncBuffer[256];
 
 void rx_callback(uint8_t * buffer, uint8_t len)
 {
   // process rx data from BLE
-  debug.println("Got BLE data");
+  DebugSerial.print("Got "); DebugSerial.print(len); DebugSerial.print(" bytes of BLE data: ");
+  for (size_t i=0; i<len; i++) {
+    DebugSerial.print(char(buffer[i]));
+  }
+  DebugSerial.println();
+
   NinoTNCSerial.write(buffer, len);
+  NinoTNCSerial.flush();
 }
 
 void setup() {
@@ -57,28 +68,37 @@ void setup() {
   bm70 = BM70(&BLESerial, 115200, rx_callback);
   bm70.reset();
 
-  NinoTNCSerial.begin(57600);
+  DebugSerial.begin(9600);
+  DebugSerial.println("Setup");
 
-  debug.begin(9600);
-  debug.println("Setup");
+  delay1(1000);
+  NinoTNCSerial.begin(57600);
+  NinoTNCSerial.write(status, statusLen);
+  
 }
 
+unsigned long last_tick = 0L;
+
 void loop() {
-  debug.println("tick");
-  digitalWrite(PD5, HIGH);
-  delay1(50);
-  digitalWrite(PD5, LOW);
-  delay1(50);
+  delay1(100);
+
+  unsigned long now = millis1();
+  if ( (now - last_tick) > 1000) {
+    DebugSerial.println("tick");
+    digitalWrite(PD5, HIGH);
+    delay1(50);
+    digitalWrite(PD5, LOW);
+    delay1(50);
+    //bm70.readCharacteristicValue(KTS_TX_CHAR_UUID);
+    last_tick = now;
+  }
+  
 
   // Read off pending data and process events
   bm70.read();
 
-  // Need to know our status
-  if (bm70.status() == BM70_STATUS_UNKNOWN)
-  {
-    bm70.updateStatus();
-    return;
-  }
+  // Maybe update our status
+  bm70.updateStatus();
 
   // Start advertising
   if (bm70.status() == BM70_STATUS_IDLE)
@@ -89,11 +109,11 @@ void loop() {
 
   // If there is data waiting from the TNC and we have a BLE connection, pass it through
   if (NinoTNCSerial.available() > 0) {
-    debug.println("Reading TNC data");
+    DebugSerial.println("Reading TNC data");
     uint8_t read = readBytes(&NinoTNCSerial, tncBuffer, 256);
-    debug.print("Read "); debug.print(read); debug.println(" bytes");
     if (read > 0) { 
-      bm70.send(tncBuffer, read);
+      bm70.send(status, statusLen);
+      //bm70.send(tncBuffer, read);
     }
   }
 
