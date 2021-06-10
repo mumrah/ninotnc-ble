@@ -32,7 +32,7 @@
 #define BM70_TYPE_TRANSPARENT_IN      0x9A // Received transparent data event
 
 #define BM70_OP_READ_LOCAL_INFO       0x01
-#define BM70_OP_RESET				  0x02
+#define BM70_OP_RESET				  				0x02
 #define BM70_OP_READ_STATUS           0x03
 
 #define BM70_OP_DISCONNECT            0x1B
@@ -51,6 +51,7 @@
 #define BM70_EVENT_CMD_COMPLETE       0x80
 #define BM70_EVENT_CLIENT_CHAR_WRITE  0x98
 
+// These UUIDs are defined https://github.com/hessu/aprs-specs/blob/master/BLE-KISS-API.md
 const uint8_t KTS_SERVICE_UUID[16] = {0x00, 0x00, 0x00, 0x01, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
 const uint8_t KTS_RX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x03, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
 const uint8_t KTS_TX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x02, 0xba, 0x2a, 0x46, 0xc9, 0xae, 0x49, 0x01, 0xb0, 0x96, 0x1f, 0x68, 0xbb};
@@ -87,6 +88,7 @@ public:
 	void reset();
 	void updateStatus();
 	void enableAdvertise();
+
 	void discoverCharacteristics(const uint8_t * serviceUUID);
 	void readCharacteristicValue(const uint8_t * serviceUUID);
 

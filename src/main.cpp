@@ -5,6 +5,9 @@
 #include "timer1.h"
 #include "BM70.h"
 
+/**
+ * Pretty print a byte array as hex characters
+ */
 void printBytes(uint8_t * bytes, size_t len) {
   char hex[2];
   for (size_t i=0; i<len; i++) {
@@ -13,6 +16,7 @@ void printBytes(uint8_t * bytes, size_t len) {
   }
 }
 
+// Hard coded APRS status message
 const uint8_t status[43] = {
   0xc0, 0x00, 0x82, 0xa0, 0xb4, 0x84, 0x98, 0x8a, 0x80, 0x96, 0x68, 0x88, 0x84, 0xb4, 0x40, 0x01, 
   0x03, 0xf0, 0x3e, 0x4e, 0x69, 0x6e, 0x6f, 0x54, 0x4e, 0x43, 0x20, 0x42, 0x4c, 0x45, 0x20, 0x69, 
@@ -24,12 +28,11 @@ BM70 bm70;
 
 SoftwareSerial DebugSerial(PD6, PD7);  
 
-
 uint8_t tncBuffer[256];
 
+// This is called when we receive data from the BM70
 void rx_callback(uint8_t * buffer, uint8_t len)
 {
-  // process rx data from BLE
   DebugSerial.print("Got "); DebugSerial.print(len); DebugSerial.print(" bytes of BLE data: ");
   for (size_t i=0; i<len; i++) {
     DebugSerial.print(char(buffer[i]));
@@ -64,17 +67,15 @@ void setup() {
   delay1(100);
   digitalWrite(PD5, LOW);
   delay1(100);
+  
+  DebugSerial.begin(9600);
+  DebugSerial.println("Setup");
 
   bm70 = BM70(&BLESerial, 115200, rx_callback);
   bm70.reset();
 
-  DebugSerial.begin(9600);
-  DebugSerial.println("Setup");
-
-  delay1(1000);
   NinoTNCSerial.begin(57600);
-  NinoTNCSerial.write(status, statusLen);
-  
+  NinoTNCSerial.write(status, statusLen);  
 }
 
 unsigned long last_tick = 0L;
@@ -89,7 +90,6 @@ void loop() {
     delay1(50);
     digitalWrite(PD5, LOW);
     delay1(50);
-    //bm70.readCharacteristicValue(KTS_TX_CHAR_UUID);
     last_tick = now;
   }
   
@@ -100,7 +100,7 @@ void loop() {
   // Maybe update our status
   bm70.updateStatus();
 
-  // Start advertising
+  // Start advertising if we are idle
   if (bm70.status() == BM70_STATUS_IDLE)
   {
     bm70.enableAdvertise();
@@ -112,8 +112,7 @@ void loop() {
     DebugSerial.println("Reading TNC data");
     uint8_t read = readBytes(&NinoTNCSerial, tncBuffer, 256);
     if (read > 0) { 
-      bm70.send(status, statusLen);
-      //bm70.send(tncBuffer, read);
+      bm70.send(tncBuffer, read);
     }
   }
 

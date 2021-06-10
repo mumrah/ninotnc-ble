@@ -28,8 +28,6 @@ uint8_t BM70::read()
         return readResult;
     }
 
-    DebugSerial.print("BM70::read() -> ");
-    DebugSerial.print("opCode: "); DebugSerial.println(lastResult.opCode, HEX);
     if (lastResult.opCode == 0) 
         return -1;
 
@@ -113,7 +111,7 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     uint64_t t = millis1();
     while (serial->available() == 0)
     {
-        if ((millis1() - t) > timeout) 
+        if ((millis1() - t) > timeout)
             return -1;
     }  
 
@@ -126,19 +124,23 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
         if ((millis1() - t) > timeout) 
             return -1;
         d = serial->read();
-        delay1(1);
+        //delay1(1);
     }
 
     uint8_t h = serial->read();
     uint8_t l = serial->read();
     result->opCode = serial->read();
     result->len = (((short) h) << 8 ) + l - 1;
+    DebugSerial.print("BM70::read() -> ");
+    DebugSerial.print("opCode: "); DebugSerial.println(result->opCode, HEX);
+    DebugSerial.print("len: "); DebugSerial.println(result->len);
     uint8_t n = readBytes(serial, result->params, result->len);
     
     result->checksum = serial->read();
 
     if (n < result->len) {
         // underflow
+        DebugSerial.println("read underflow!!");
         return -2;
     }
 
@@ -149,6 +151,7 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     checksum += result->checksum;
 
     if (checksum != 0) {
+        DebugSerial.println("read checksum error!!");
         // error, what now?
         return -3;
     }
@@ -228,10 +231,19 @@ uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t tim
 void BM70::reset()
 {
     write0(BM70_OP_RESET);
+    currentStatus = BM70_STATUS_UNKNOWN;
+	connectionHandle = 0x00;
+    lastStatusUpdateMs = 0L;
 }
 
 void BM70::updateStatus()
 {
+    if (currentStatus == BM70_STATUS_CONNECTED && connectionHandle == 0x00) {
+        DebugSerial.println("In connected state but no connection handle. Resetting");
+        reset();
+        return;
+    }
+
     unsigned long now = millis1();
     if (currentStatus == BM70_STATUS_UNKNOWN || (now - lastStatusUpdateMs) > BM70_STATUS_MAX_AGE_MS) {
         write0(BM70_OP_READ_STATUS);
