@@ -52,8 +52,9 @@ uint8_t BM70::read()
             else
             {
                 // failed, ignore
-                DebugSerial.println("BLE Connection Failed!");
+                DebugSerial.print("BLE Connection Failed, param: "); DebugSerial.println(lastResult.params[0], HEX);
                 currentStatus = BM70_STATUS_UNKNOWN;
+                delay1(50);
             }
             break;
         case 0x72:
@@ -115,44 +116,63 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
             return -1;
     }  
 
+    DebugSerial.print("BM70::read() -> ");
+
     uint8_t checksum = 0;
-    uint8_t d = 0;
+    uint8_t b = serial->read();
 
     // read until we find sync word 0xAA
-    while (d != 0xAA) 
+    while (b != 0xAA) 
     {
         if ((millis1() - t) > timeout) 
+        {
+            DebugSerial.println("BM70::read() timeout!");
             return -1;
-        d = serial->read();
-        //delay1(1);
+        }
+        DebugSerial.print("skipping -> "); DebugSerial.println(b, HEX);
+        b = serial->read();
+        if (b == 0xFF)
+        {
+            DebugSerial.println("BM70::read() no data!");
+            return -1;
+        }
     }
 
     uint8_t h = serial->read();
+    DebugSerial.print("h: "); DebugSerial.print(h, HEX);
     uint8_t l = serial->read();
+    DebugSerial.print(", l: "); DebugSerial.print(l, HEX);
     result->opCode = serial->read();
+    DebugSerial.print(", op: "); DebugSerial.print(result->opCode, HEX);
     result->len = (((short) h) << 8 ) + l - 1;
-    DebugSerial.print("BM70::read() -> ");
-    DebugSerial.print("opCode: "); DebugSerial.println(result->opCode, HEX);
-    DebugSerial.print("len: "); DebugSerial.println(result->len);
-    uint8_t n = readBytes(serial, result->params, result->len);
-    
-    result->checksum = serial->read();
-
-    if (n < result->len) {
-        // underflow
-        DebugSerial.println("read underflow!!");
-        return -2;
+    DebugSerial.print(", len: "); DebugSerial.print(result->len);
+    uint8_t n = readBytes(serial, result->params, result->len, 2000);
+    DebugSerial.print(", n: "); DebugSerial.print(n);
+    DebugSerial.print(", params: ");
+    for (uint8_t i=0; i<n; i++) {
+        DebugSerial.print(result->params[i], HEX); DebugSerial.print(" ");
     }
 
+    if (n < result->len) {
+        // If we read a large payload, truncate it and skip checksum (TODO improve this)
+        DebugSerial.print("\nread underflow!! Expected "); DebugSerial.print(result->len);
+        DebugSerial.print(" but only read "); DebugSerial.println(n);
+        result->len = n;
+        //return -2;
+        return 0;
+    }
+
+    result->checksum = serial->read();
+    DebugSerial.print(", checksum: "); DebugSerial.println(result->checksum);
+
     checksum += (h + l + result->opCode);
-    for (uint8_t i=0; i<result->len; i++) {
+    for (uint8_t i=0; i<n; i++) {
         checksum += result->params[i];
     }
     checksum += result->checksum;
 
     if (checksum != 0) {
-        DebugSerial.println("read checksum error!!");
-        // error, what now?
+        DebugSerial.print("checksum error, saw "); DebugSerial.println(checksum, HEX);
         return -3;
     }
     return 0;
@@ -236,19 +256,23 @@ void BM70::reset()
     lastStatusUpdateMs = 0L;
 }
 
-void BM70::updateStatus()
+bool BM70::updateStatus()
 {
     if (currentStatus == BM70_STATUS_CONNECTED && connectionHandle == 0x00) {
         DebugSerial.println("In connected state but no connection handle. Resetting");
         reset();
-        return;
+        return true;
     }
 
     unsigned long now = millis1();
     if (currentStatus == BM70_STATUS_UNKNOWN || (now - lastStatusUpdateMs) > BM70_STATUS_MAX_AGE_MS) {
+        DebugSerial.println("Reading BLE status");
         write0(BM70_OP_READ_STATUS);
         lastStatusUpdateMs = now;
+        return true;
     }
+
+    return false;
 }
 
 uint8_t BM70::status() {
@@ -258,6 +282,7 @@ uint8_t BM70::status() {
 void BM70::enableAdvertise()
 {
     write1(BM70_OP_ADVERTISE_ENABLE, 0x01); 
+    delay1(50);
     if (readCommandResponse(BM70_OP_ADVERTISE_ENABLE) == 0) {
         currentStatus = BM70_STATUS_STANDBY;
     }
@@ -305,9 +330,9 @@ void BM70::send(const uint8_t * data, uint8_t len)
         if (offset == 23)
         {
             write(BM70_OP_SEND_CHAR, params, offset);
-            delay1(10);
+            delay1(50);
             readCommandResponse(BM70_OP_SEND_CHAR);
-            delay1(10);
+            delay1(50);
             offset = 3;
         }
     }
@@ -315,8 +340,8 @@ void BM70::send(const uint8_t * data, uint8_t len)
     if (offset > 3)
     {
         write(BM70_OP_SEND_CHAR, params, offset);
-        delay1(10);
+        delay1(50);
         readCommandResponse(BM70_OP_SEND_CHAR);
-        delay1(10);
+        delay1(50);
     }
 }

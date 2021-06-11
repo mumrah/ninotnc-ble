@@ -3,8 +3,8 @@
 
 #include "Arduino.h"
 
-#define BM70_DEFAULT_TIMEOUT          50
-#define BM70_STATUS_MAX_AGE_MS        3000
+#define BM70_DEFAULT_TIMEOUT          200
+#define BM70_STATUS_MAX_AGE_MS        10000
 
 #define BM70_RESPONSE_BUFF_SIZE       1  // 3
 #define BM70_TRANSPARENT_BUFF_SIZE    1  // 10
@@ -58,7 +58,7 @@ const uint8_t KTS_TX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x02, 0xba, 0x2a, 0x46, 
 
 
 struct Result {
-  size_t opCode;
+  uint8_t opCode;
   uint8_t params[100];
   uint8_t len;
   uint8_t checksum;
@@ -86,7 +86,7 @@ public:
 	uint8_t readCommandResponse(uint8_t opCode);
 
 	void reset();
-	void updateStatus();
+	bool updateStatus();
 	void enableAdvertise();
 
 	void discoverCharacteristics(const uint8_t * serviceUUID);

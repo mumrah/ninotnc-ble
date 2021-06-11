@@ -1,5 +1,7 @@
 #define F_CPU 7372800L
 #define CTC_MATCH_OVERFLOW ((F_CPU / 1000) / 64) 
+#define SERIAL_RX_BUFFER_SIZE 256
+#define SERIAL_TX_BUFFER_SIZE 256
 
 #include "config.h"
 #include "timer1.h"
@@ -28,7 +30,7 @@ BM70 bm70;
 
 SoftwareSerial DebugSerial(PD6, PD7);  
 
-uint8_t tncBuffer[256];
+uint8_t tncBuffer[100];
 
 // This is called when we receive data from the BM70
 void rx_callback(uint8_t * buffer, uint8_t len)
@@ -59,6 +61,7 @@ void setup() {
 
   pinMode(PD5, OUTPUT);
 
+  // Flash the indicator LED
   digitalWrite(PD5, HIGH);
   delay1(100);
   digitalWrite(PD5, LOW);
@@ -68,14 +71,15 @@ void setup() {
   digitalWrite(PD5, LOW);
   delay1(100);
   
-  DebugSerial.begin(9600);
+  DebugSerial.begin(19200);
   DebugSerial.println("Setup");
 
   bm70 = BM70(&BLESerial, 115200, rx_callback);
   bm70.reset();
 
   NinoTNCSerial.begin(57600);
-  NinoTNCSerial.write(status, statusLen);  
+  //NinoTNCSerial.write(status, statusLen);  
+  delay1(3000);
 }
 
 unsigned long last_tick = 0L;
@@ -98,11 +102,15 @@ void loop() {
   bm70.read();
 
   // Maybe update our status
-  bm70.updateStatus();
+  if (bm70.updateStatus())
+  {
+    return;
+  }
 
   // Start advertising if we are idle
   if (bm70.status() == BM70_STATUS_IDLE)
   {
+    DebugSerial.println("Enable Advertise");
     bm70.enableAdvertise();
     return;
   }
@@ -110,12 +118,11 @@ void loop() {
   // If there is data waiting from the TNC and we have a BLE connection, pass it through
   if (NinoTNCSerial.available() > 0) {
     DebugSerial.println("Reading TNC data");
-    uint8_t read = readBytes(&NinoTNCSerial, tncBuffer, 256);
+    uint8_t read = readBytes(&NinoTNCSerial, tncBuffer, 100, 200);
     if (read > 0) { 
       bm70.send(tncBuffer, read);
     }
   }
-
 }
 
 int main()

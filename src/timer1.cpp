@@ -29,11 +29,21 @@ void delay1(unsigned long ms)
 	}
 }
 
-uint8_t readBytes(HardwareSerial * serial, uint8_t * buffer, size_t length, uint8_t timeout_ms) {
-  size_t count = 0;
+int timedRead(HardwareSerial * serial, int timeout)
+{
+  int c;
   unsigned long _startMillis = millis1();
-  while (count < length && (millis1() - _startMillis) < timeout_ms) {
-    int c = serial->read();
+  do {
+    c = serial->read();
+    if (c >= 0) return c;
+  } while(millis1() - _startMillis < timeout);
+  return -1;     // -1 indicates timeout
+}
+
+size_t readBytes(HardwareSerial * serial, uint8_t * buffer, size_t length, int timeout_ms) {
+  size_t count = 0;
+  while (count < length) {
+    int c = timedRead(serial, timeout_ms);
     if (c < 0) break;
     *buffer++ = (char)c;
     count++;
