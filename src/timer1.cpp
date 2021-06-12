@@ -45,6 +45,7 @@ size_t readBytes(HardwareSerial * serial, uint8_t * buffer, size_t length, int t
   while (count < length) {
     int c = timedRead(serial, timeout_ms);
     if (c < 0) break;
+    delay1(2);
     *buffer++ = (char)c;
     count++;
   }

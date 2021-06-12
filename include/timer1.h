@@ -8,6 +8,9 @@ unsigned long millis1();
  */
 void delay1(unsigned long ms);
 
+
+int timedRead(HardwareSerial * serial, int timeout);
+
 /**
  * Read some bytes off a serial device with a timeout
  */

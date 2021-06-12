@@ -59,9 +59,17 @@ const uint8_t KTS_TX_CHAR_UUID[16] = {0x00, 0x00, 0x00, 0x02, 0xba, 0x2a, 0x46, 
 
 struct Result {
   uint8_t opCode;
-  uint8_t params[100];
-  uint8_t len;
+  uint8_t buffer[300];
+  uint16_t len;
   uint8_t checksum;
+
+	uint8_t params(uint8_t i)
+	{
+			// Example 6 byte payload: AA 0 2 81 3 7A, only 0 is a valid index
+			if (i > len - 6) 
+					return -1;
+			return buffer[i + 4];
+	}
 };
 
 typedef void (*EventCallback)(struct Result *result);
@@ -103,7 +111,9 @@ private:
 
 	uint8_t rxBuffer[100];
 	uint8_t currentStatus;
-	Result lastResult;
+
+	Result result;
+	uint8_t readPos;
 
 	uint64_t connectionAddress;
 	uint8_t connectionHandle;
@@ -112,6 +122,9 @@ private:
 	uint8_t txCharHandle;
 
 	unsigned long lastStatusUpdateMs;
+	unsigned long lastReadMs;
+
+	void handleResult(Result *result);
 };
 
 #endif // ifndef BM70_H

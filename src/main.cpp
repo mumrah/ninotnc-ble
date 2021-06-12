@@ -1,7 +1,5 @@
 #define F_CPU 7372800L
 #define CTC_MATCH_OVERFLOW ((F_CPU / 1000) / 64) 
-#define SERIAL_RX_BUFFER_SIZE 256
-#define SERIAL_TX_BUFFER_SIZE 256
 
 #include "config.h"
 #include "timer1.h"
@@ -74,7 +72,7 @@ void setup() {
   DebugSerial.begin(19200);
   DebugSerial.println("Setup");
 
-  bm70 = BM70(&BLESerial, 115200, rx_callback);
+  bm70 = BM70(&BLESerial, 19200, rx_callback);
   bm70.reset();
 
   NinoTNCSerial.begin(57600);
@@ -84,8 +82,74 @@ void setup() {
 
 unsigned long last_tick = 0L;
 
+Result result;
+uint8_t pos;
+unsigned long lastRead = 0L;
+
+void handleResult(Result * result) {
+  if (result->opCode == 0x81) { // Status
+    DebugSerial.print("BLE Status Report: "); DebugSerial.println(result->buffer[4]);
+    if (result->buffer[4] == 9) { 
+      bm70.enableAdvertise();
+    }
+  }
+}
+
+void parsePayload(Result * result, uint16_t len) {
+  DebugSerial.print("Got payload: ");
+    for (uint8_t i = 0; i<pos; i++) {
+      DebugSerial.print(result->buffer[i], HEX); DebugSerial.print(" ");
+    }
+    DebugSerial.println();
+    uint16_t length = (((short) result->buffer[1]) << 8 ) + result->buffer[2] + 4;
+    if (length == len) {
+      DebugSerial.println("Good length");
+      result->len = length;
+      result->opCode = result->buffer[3];
+      handleResult(result);
+    } else {
+      DebugSerial.println("Bad length");
+    }
+}
+
+// AA 0 2 81 3 7A
+
+void feed(uint8_t b) {
+  if (pos == 0) {
+    if (b == 0xAA) {
+      result.buffer[pos++] = 0xAA;
+      result.opCode = -1;
+      result.len = -1;
+    } else {
+      DebugSerial.println("Continue reading until sync");
+    }
+  } else {
+    if (b == 0xAA) {
+      // beginning of next packet!
+      DebugSerial.println("Out of sync");
+      parsePayload(&result, pos);
+      pos = 0;
+      result.buffer[pos++] = 0xAA;
+      result.opCode = -1;
+      result.len = -1;
+    } else {
+      result.buffer[pos++] = b;
+      if (pos == 3) {
+        result.len = (((short) result.buffer[1]) << 8 ) + result.buffer[2] + 4;
+      } else if (pos == 4) {
+        result.opCode = b;
+      } else if (pos == result.len) {
+        DebugSerial.println("Read full payload");
+        parsePayload(&result, pos);
+        pos = 0;
+        result.opCode = -1;
+        result.len = -1;
+      }
+    }
+  }
+}
+
 void loop() {
-  delay1(100);
 
   unsigned long now = millis1();
   if ( (now - last_tick) > 1000) {
@@ -96,9 +160,26 @@ void loop() {
     delay1(50);
     last_tick = now;
   }
-  
 
-  // Read off pending data and process events
+/*
+  if (pos > 0 && now - lastRead > 1000) {
+    // Read timeout
+    DebugSerial.println("Timed out reading");
+    parsePayload(&result, pos);
+    pos = 0;
+    result.len = -1;
+    result.opCode =-1;
+    lastRead = now;
+  }
+
+  if (BLESerial.available()) {
+    uint8_t b = BLESerial.read();
+    DebugSerial.print("Read -> ");  DebugSerial.println(b, HEX);
+    lastRead = now;
+    feed(b);
+  }
+  */
+
   bm70.read();
 
   // Maybe update our status
@@ -114,6 +195,8 @@ void loop() {
     bm70.enableAdvertise();
     return;
   }
+
+  return;
 
   // If there is data waiting from the TNC and we have a BLE connection, pass it through
   if (NinoTNCSerial.available() > 0) {

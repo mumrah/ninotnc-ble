@@ -13,46 +13,130 @@ BM70::BM70(HardwareSerial * initSerial, uint32_t baudrate, RxCallback callback)
 	currentStatus = BM70_STATUS_UNKNOWN;
 	connectionHandle = 0x00;
     lastStatusUpdateMs = 0L;
+    lastReadMs = 0L;
+    readPos = 0;
 }
 
 /**
- * Read some data off the BM70 UART buffer.
+ * Read one byte off the BM70 UART buffer, if available.
  * 
- * Some events will be automatically handled to update our internal state,
- * others will be passed on to the callback.
+ * If this data completes a BM70 payload, validate it and and pass to the handler.
+ * 
+ * @return 0 if data was read but no payloads were decoded
+ *         1 if data was read and a payload was decoded
+ *         -1 if no data was read
+ *         -2 if there was a read sync error
  */
 uint8_t BM70::read()
-{  
-    uint8_t readResult = read(&lastResult);
-    if (readResult != 0) {
-        return readResult;
+{
+    uint8_t b = serial->read();
+    if (b == 0xFF)
+        return -1;
+    
+    unsigned long now = millis1();
+
+    if (readPos != 0 && (now - lastReadMs) > BM70_DEFAULT_TIMEOUT)
+    {
+        DebugSerial.println("Timed out reading BLE payload, resetting buffer");
+        result.len = -1;
+        result.opCode = -1;
+        readPos = 0;
+    }
+    lastReadMs = now;
+
+    if (readPos == 0) 
+    {
+        if (b == 0xAA) {
+            // Normal case
+            result.buffer[readPos++] = 0xAA;
+            result.opCode = -1;
+            result.len = -1;
+        } else {
+            DebugSerial.println("Continue reading until sync");
+        }
+    }
+    else 
+    {
+        if (b == 0xAA) 
+        {
+            // We over-read and hit the next payload
+            DebugSerial.println("Out of sync");
+            readPos = 0;
+            result.buffer[readPos++] = 0xAA;
+            result.opCode = -1;
+            result.len = -1;
+            return -2;
+        } 
+        else {
+            result.buffer[readPos++] = b;
+            if (readPos == 3) {
+                // Read h + l
+                result.len = (((short) result.buffer[1]) << 8 ) + result.buffer[2] + 4;
+            } else if (readPos == 4) {
+                // Read op code
+                result.opCode = b;
+            } else if (readPos == result.len) {
+                // Read the whole payload
+                DebugSerial.println("Read full payload");
+                handleResult(&result);
+                readPos = 0;
+                result.opCode = -1;
+                result.len = -1;
+                return 1;
+            }
+        }
     }
 
-    if (lastResult.opCode == 0) 
-        return -1;
+    return 0;
+}
 
-    switch (lastResult.opCode)
+void BM70::handleResult(Result *result)
+{
+    DebugSerial.print("Validating: ");
+    for (uint16_t i = 0; i<readPos; i++) 
+    {
+      DebugSerial.print(result->buffer[i], HEX); DebugSerial.print(" ");
+    }
+    DebugSerial.println();
+
+    if (result->len != readPos) 
+    {
+        DebugSerial.println("Bad length");
+        return;
+    } 
+
+    uint8_t checksum = 0;
+	for (uint16_t i = 2; i <= result->len - 1; i++)
+		checksum += result->buffer[i];
+
+	if (checksum != 0)
+    {
+        DebugSerial.println("Bad checksum");
+        return;
+    } 
+
+    switch (result->opCode)
     {
         case 0x70:
             // Advertising report event, someone noticed us
             break;
         case 0x71:
             // LE Connection Complete Event
-            if (lastResult.params[0] == 0x00)
+            if (result->params(0) == 0x00)
             {
                 // success
                 DebugSerial.println("BLE Connected");
-                connectionHandle = lastResult.params[1];
+                connectionHandle = result->params(1);
                 uint64_t address = 0;
 				for (uint8_t i = 0; i < 6; i++)
-					address += (((uint64_t) lastResult.params[i + 4]) << (8 * i));
+					address += (((uint64_t) result->params(i + 4)) << (8 * i));
                 connectionAddress = address;
                 currentStatus = BM70_STATUS_CONNECTED;
             }
             else
             {
                 // failed, ignore
-                DebugSerial.print("BLE Connection Failed, param: "); DebugSerial.println(lastResult.params[0], HEX);
+                DebugSerial.print("BLE Connection Failed, param: "); DebugSerial.println(result->params(0), HEX);
                 currentStatus = BM70_STATUS_UNKNOWN;
                 delay1(50);
             }
@@ -67,39 +151,39 @@ uint8_t BM70::read()
         case 0x80:
         {
             // Command Complete Event, ignore for now
-            uint8_t command = lastResult.params[0];
-            uint8_t result = lastResult.params[1];
+            uint8_t commandOp = result->params(0);
+            uint8_t commandResult = result->params(1);
             DebugSerial.print("Command Complete: "); 
-            DebugSerial.print("command: "); DebugSerial.print(command, HEX);
-            DebugSerial.print(" result: "); DebugSerial.println(result, HEX);
+            DebugSerial.print("command: "); DebugSerial.print(commandOp, HEX);
+            DebugSerial.print(" result: "); DebugSerial.println(commandResult, HEX);
             break;
         }   
         case 0x81:
             // Status Report Event
-            DebugSerial.print("BLE Status Report: "); DebugSerial.println(lastResult.params[0]);
+            DebugSerial.print("BLE Status Report: "); DebugSerial.println(result->params(0));
             lastStatusUpdateMs = millis1();
-            if (currentStatus != lastResult.params[0])
+            if (currentStatus != result->params(0))
             {
-                currentStatus = lastResult.params[0];
+                currentStatus = result->params(0);
             }  
             break;
         case 0x98:
         {
             // Client Write Characteristic
-            // uint8_t handle = lastResult.params[0];
+            // uint8_t handle = result.params[0];
             // TODO check connection handle and characteristic handle
             uint16_t char_handle = 0;
-            char_handle += (lastResult.params[1] << 8) + lastResult.params[2];
-            for (uint8_t i = 0; i < lastResult.len - 3; i++)
-                rxBuffer[i] = lastResult.params[i + 3];
-            rxCallback(rxBuffer, lastResult.len - 3);
+            char_handle += (result->params(1) << 8) + result->params(2);
+            for (uint16_t i = 0; i < result->len - 6; i++)
+                rxBuffer[i] = result->params(i + 3);
+            rxCallback(rxBuffer, result->len - 6);
             break;
         }
         default:
             // Unsupported, ignore
+            DebugSerial.print("Ignoring unsupported opCode "); DebugSerial.println(result->opCode);
             break;
-    }
-    return 0;
+    }   
 }
 
 uint8_t BM70::read(Result *result) 
@@ -114,6 +198,7 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     {
         if ((millis1() - t) > timeout)
             return -1;
+        delay1(2);
     }  
 
     DebugSerial.print("BM70::read() -> ");
@@ -124,11 +209,6 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     // read until we find sync word 0xAA
     while (b != 0xAA) 
     {
-        if ((millis1() - t) > timeout) 
-        {
-            DebugSerial.println("BM70::read() timeout!");
-            return -1;
-        }
         DebugSerial.print("skipping -> "); DebugSerial.println(b, HEX);
         b = serial->read();
         if (b == 0xFF)
@@ -139,20 +219,23 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
     }
 
     uint8_t h = serial->read();
-    DebugSerial.print("h: "); DebugSerial.print(h, HEX);
+    DebugSerial.print("h: "); DebugSerial.print(h);
     uint8_t l = serial->read();
-    DebugSerial.print(", l: "); DebugSerial.print(l, HEX);
+    DebugSerial.print(", l: "); DebugSerial.print(l);
     result->opCode = serial->read();
     DebugSerial.print(", op: "); DebugSerial.print(result->opCode, HEX);
     result->len = (((short) h) << 8 ) + l - 1;
     DebugSerial.print(", len: "); DebugSerial.print(result->len);
-    uint8_t n = readBytes(serial, result->params, result->len, 2000);
-    DebugSerial.print(", n: "); DebugSerial.print(n);
+    uint16_t i = 0;
     DebugSerial.print(", params: ");
-    for (uint8_t i=0; i<n; i++) {
-        DebugSerial.print(result->params[i], HEX); DebugSerial.print(" ");
+    for (i = 0; serial->available() && i < result->len; i++) {
+        result->buffer[i] = serial->read();
+        DebugSerial.print(result->buffer[i], HEX); DebugSerial.print(" ");
+        delay1(2);
     }
-
+    uint8_t n = i;
+    DebugSerial.print(", n: "); DebugSerial.print(n);
+    
     if (n < result->len) {
         // If we read a large payload, truncate it and skip checksum (TODO improve this)
         DebugSerial.print("\nread underflow!! Expected "); DebugSerial.print(result->len);
@@ -167,7 +250,7 @@ uint8_t BM70::read(Result *result, uint16_t timeout)
 
     checksum += (h + l + result->opCode);
     for (uint8_t i=0; i<n; i++) {
-        checksum += result->params[i];
+        checksum += result->buffer[i];
     }
     checksum += result->checksum;
 
@@ -183,11 +266,11 @@ uint8_t BM70::readCommandResponse(uint8_t opCode) {
     while ((millis1() - start) < BM70_DEFAULT_TIMEOUT) {
         if (read() != -1) {
             // Read something
-            if (lastResult.opCode == 0x80) {
-                uint8_t command = lastResult.params[0];
-                uint8_t result = lastResult.params[1];
-                if (command == opCode) {
-                    return result;
+            if (result.opCode == 0x80) {
+                uint8_t commandCode = result.buffer[0];
+                uint8_t commandResult = result.buffer[1];
+                if (commandCode == opCode) {
+                    return commandResult;
                 }
             }
         }   
