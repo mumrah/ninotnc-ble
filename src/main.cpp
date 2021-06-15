@@ -39,8 +39,8 @@ void rx_callback(uint8_t * buffer, uint8_t len)
   }
   DebugSerial.println();
 
-  NinoTNCSerial.write(buffer, len);
-  NinoTNCSerial.flush();
+  //NinoTNCSerial.write(status, statusLen);
+  //NinoTNCSerial.flush();
 }
 
 void setup() {
@@ -76,81 +76,19 @@ void setup() {
   bm70.reset();
 
   NinoTNCSerial.begin(57600);
+  //UCSR1A |= (1 << U2X1); // Set dual speed mode for serial1
+
   //NinoTNCSerial.write(status, statusLen);  
   delay1(3000);
 }
 
 unsigned long last_tick = 0L;
 
-Result result;
-uint8_t pos;
-unsigned long lastRead = 0L;
-
-void handleResult(Result * result) {
-  if (result->opCode == 0x81) { // Status
-    DebugSerial.print("BLE Status Report: "); DebugSerial.println(result->buffer[4]);
-    if (result->buffer[4] == 9) { 
-      bm70.enableAdvertise();
-    }
-  }
-}
-
-void parsePayload(Result * result, uint16_t len) {
-  DebugSerial.print("Got payload: ");
-    for (uint8_t i = 0; i<pos; i++) {
-      DebugSerial.print(result->buffer[i], HEX); DebugSerial.print(" ");
-    }
-    DebugSerial.println();
-    uint16_t length = (((short) result->buffer[1]) << 8 ) + result->buffer[2] + 4;
-    if (length == len) {
-      DebugSerial.println("Good length");
-      result->len = length;
-      result->opCode = result->buffer[3];
-      handleResult(result);
-    } else {
-      DebugSerial.println("Bad length");
-    }
-}
-
-// AA 0 2 81 3 7A
-
-void feed(uint8_t b) {
-  if (pos == 0) {
-    if (b == 0xAA) {
-      result.buffer[pos++] = 0xAA;
-      result.opCode = -1;
-      result.len = -1;
-    } else {
-      DebugSerial.println("Continue reading until sync");
-    }
-  } else {
-    if (b == 0xAA) {
-      // beginning of next packet!
-      DebugSerial.println("Out of sync");
-      parsePayload(&result, pos);
-      pos = 0;
-      result.buffer[pos++] = 0xAA;
-      result.opCode = -1;
-      result.len = -1;
-    } else {
-      result.buffer[pos++] = b;
-      if (pos == 3) {
-        result.len = (((short) result.buffer[1]) << 8 ) + result.buffer[2] + 4;
-      } else if (pos == 4) {
-        result.opCode = b;
-      } else if (pos == result.len) {
-        DebugSerial.println("Read full payload");
-        parsePayload(&result, pos);
-        pos = 0;
-        result.opCode = -1;
-        result.len = -1;
-      }
-    }
-  }
-}
+unsigned long last_nino_read = 0L;
+uint8_t nino_read_pos = 0;
+uint8_t nino_packet[400]; 
 
 void loop() {
-
   unsigned long now = millis1();
   if ( (now - last_tick) > 1000) {
     DebugSerial.println("tick");
@@ -161,26 +99,26 @@ void loop() {
     last_tick = now;
   }
 
-/*
-  if (pos > 0 && now - lastRead > 1000) {
-    // Read timeout
-    DebugSerial.println("Timed out reading");
-    parsePayload(&result, pos);
-    pos = 0;
-    result.len = -1;
-    result.opCode =-1;
-    lastRead = now;
-  }
-
-  if (BLESerial.available()) {
-    uint8_t b = BLESerial.read();
-    DebugSerial.print("Read -> ");  DebugSerial.println(b, HEX);
-    lastRead = now;
-    feed(b);
-  }
-  */
-
   bm70.read();
+  
+  if (NinoTNCSerial.available() > 0) 
+  {
+    uint8_t b = NinoTNCSerial.read();
+    DebugSerial.print("NinoTNC "); DebugSerial.print(nino_read_pos);
+    DebugSerial.print(" "); DebugSerial.print(b, HEX); DebugSerial.print(" "); DebugSerial.println(char(b));
+    nino_packet[nino_read_pos++] = b;
+    last_nino_read = now;
+    return;
+  }
+
+  if (nino_read_pos > 0 && (now - last_nino_read) > 500) {
+      DebugSerial.print("NinoTNC read: ");
+      for (size_t i=0; i<nino_read_pos; i++) {
+        DebugSerial.print(char(nino_packet[i]));
+      }
+      DebugSerial.println();
+      nino_read_pos = 0;
+  }
 
   // Maybe update our status
   if (bm70.updateStatus())
@@ -196,16 +134,6 @@ void loop() {
     return;
   }
 
-  return;
-
-  // If there is data waiting from the TNC and we have a BLE connection, pass it through
-  if (NinoTNCSerial.available() > 0) {
-    DebugSerial.println("Reading TNC data");
-    uint8_t read = readBytes(&NinoTNCSerial, tncBuffer, 100, 200);
-    if (read > 0) { 
-      bm70.send(tncBuffer, read);
-    }
-  }
 }
 
 int main()
