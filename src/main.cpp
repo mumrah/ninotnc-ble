@@ -34,7 +34,6 @@ void printBytes(uint8_t * bytes, size_t len)
 
 void rx_callback(uint8_t * buffer, uint8_t len)
 {
-  DebugSerial.print("Got "); DebugSerial.print(len); DebugSerial.println(" bytes of BLE data: ");
   printBytes(buffer, len);
   Serial1.write(buffer, len);
   Serial1.flush();

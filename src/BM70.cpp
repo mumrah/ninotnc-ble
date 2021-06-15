@@ -200,14 +200,21 @@ void BM70::handleResult(Result *result)
         case 0x98:
         {
             // Client Write Characteristic
-            // uint8_t handle = result.params[0];
-            // TODO check connection handle and characteristic handle
-            uint16_t char_handle = 0;
-            char_handle += (result->params(1) << 8) + result->params(2);
-            for (uint16_t i = 0; i < result->len - 6; i++)
-                rxBuffer[i] = result->params(i + 3);
-            rxCallback(rxBuffer, result->len - 6);
-            break;
+            uint8_t connHandle = result->params(0);
+            // TODO check the characteristic handle
+            // uint16_t charHandle = (result->params(1) << 8) + result->params(2);
+            if (connectionHandle == connHandle)
+            {
+                DebugSerial.print("Got "); DebugSerial.print(result->len - 8); 
+                DebugSerial.print(" bytes of BLE data from connection "); DebugSerial.println(connHandle, HEX);
+                rxCallback(&(result->buffer[7]), result->len - 8);
+                break;
+            }
+            else
+            {
+                DebugSerial.print("Unexpected BLE data from connection "); DebugSerial.println(connHandle, HEX);
+            }
+            
         }
         default:
             // Unsupported, ignore
@@ -219,9 +226,7 @@ void BM70::handleResult(Result *result)
 uint8_t BM70::readCommandResponse(uint8_t opCode) {
     unsigned long start = millis();
     while ((millis() - start) < BM70_DEFAULT_TIMEOUT) {
-        DebugSerial.print(".");
-        if (read()) {
-            // Read something
+        if (read() > 0) {
             if (result.opCode == opCode) {
                 uint8_t commandCode = result.buffer[0];
                 uint8_t commandResult = result.buffer[1];
@@ -231,7 +236,6 @@ uint8_t BM70::readCommandResponse(uint8_t opCode) {
             }
         } 
     }  
-    DebugSerial.println(";");
     return -1; 
 }
 
@@ -316,7 +320,8 @@ bool BM70::updateStatus()
     return false;
 }
 
-uint8_t BM70::status() {
+uint8_t BM70::status() 
+{
     return currentStatus;
 }
 
@@ -330,26 +335,6 @@ void BM70::enableAdvertise()
 uint8_t BM70::connection()
 {
     return connectionHandle;
-}
-
-
-// TODO probably don't need this
-void BM70::discoverCharacteristics(const uint8_t * serviceUUID)
-{
-    uint8_t params[17]; // connection handle byte + 128 bit uuid
-    params[0] = connectionHandle;
-    memcpy(params, serviceUUID, 16);
-    write(0X31, params, 17);
-    //readCommandResponse();
-}
-
-void BM70::readCharacteristicValue(const uint8_t * serviceUUID) {
-    if (connectionHandle != 0x00) {
-        uint8_t params[17]; // connection handle byte + 128 bit uuid
-        params[0] = connectionHandle;
-        memcpy(params+1, serviceUUID, 16);
-        write(BM70_OP_READ_CHAR_UUID, params, 17);  
-    }
 }
 
 void BM70::send(const uint8_t * data, uint8_t len)
