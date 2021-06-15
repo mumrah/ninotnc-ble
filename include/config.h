@@ -1,6 +1,5 @@
 #ifndef Config_h
 #define Config_h
-
 #include "Arduino.h"
 #include "SoftwareSerial.h"
 

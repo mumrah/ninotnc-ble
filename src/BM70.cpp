@@ -1,5 +1,4 @@
 #include "BM70.h"
-#include "timer1.h"
 #include "config.h"
 
 BM70::BM70()
@@ -41,7 +40,7 @@ uint8_t BM70::read(uint16_t timeout_ms)
     if (b == 0xFF)
         return -1;
     
-    unsigned long now = millis1();
+    unsigned long now = millis();
 
     if (readPos != 0 && (now - lastReadMs) > timeout_ms)
     {
@@ -149,7 +148,7 @@ void BM70::handleResult(Result *result)
                 // failed, ignore
                 DebugSerial.print("BLE Connection Failed, param: "); DebugSerial.println(result->params(0), HEX);
                 currentStatus = BM70_STATUS_UNKNOWN;
-                delay1(50);
+                delay(50);
             }
             break;
         case 0x72:
@@ -192,7 +191,7 @@ void BM70::handleResult(Result *result)
         case 0x81:
             // Status Report Event
             DebugSerial.print("BLE Status Report: "); DebugSerial.println(result->params(0));
-            lastStatusUpdateMs = millis1();
+            lastStatusUpdateMs = millis();
             if (currentStatus != result->params(0))
             {
                 currentStatus = result->params(0);
@@ -218,19 +217,21 @@ void BM70::handleResult(Result *result)
 }
 
 uint8_t BM70::readCommandResponse(uint8_t opCode) {
-    unsigned long start = millis1();
-    while ((millis1() - start) < BM70_DEFAULT_TIMEOUT) {
+    unsigned long start = millis();
+    while ((millis() - start) < BM70_DEFAULT_TIMEOUT) {
+        DebugSerial.print(".");
         if (read()) {
             // Read something
-            if (result.opCode == 0x80) {
+            if (result.opCode == opCode) {
                 uint8_t commandCode = result.buffer[0];
                 uint8_t commandResult = result.buffer[1];
                 if (commandCode == opCode) {
                     return commandResult;
                 }
             }
-        }   
+        } 
     }  
+    DebugSerial.println(";");
     return -1; 
 }
 
@@ -270,18 +271,19 @@ uint8_t BM70::write (uint8_t opCode, uint8_t * params, uint8_t len, uint16_t tim
     }
 	buffer[len + 4] = checksum;
     
-    uint64_t start = millis1();
+    uint64_t start = millis();
     while (serial -> availableForWrite() < len + 5)
     {
-        if ((millis1() - start) > timeout) 
+        if ((millis() - start) > timeout) 
             return -1;
-        delay1(1);
+        delay(1);
     }
     DebugSerial.print("BM70::write() ->");
     DebugSerial.print(" opCode: "); DebugSerial.print(opCode, HEX);
     DebugSerial.print(" params: "); printBytes(params, len); DebugSerial.println();
     serial -> write(buffer, len + 5); 
     serial -> flush();
+    DebugSerial.print("Wrote "); DebugSerial.println(len + 5);
     return len + 5;
 }
 
@@ -303,7 +305,7 @@ bool BM70::updateStatus()
         return true;
     }
 
-    unsigned long now = millis1();
+    unsigned long now = millis();
     if ((now - lastStatusUpdateMs) > BM70_STATUS_MAX_AGE_MS) {
         DebugSerial.println("Reading BLE status");
         write0(BM70_OP_READ_STATUS);
@@ -367,9 +369,10 @@ void BM70::send(const uint8_t * data, uint8_t len)
         if (offset == 23)
         {
             write(BM70_OP_SEND_CHAR, params, offset);
-            delay1(50);
-            readCommandResponse(BM70_OP_SEND_CHAR);
-            delay1(50);
+            delay(50);
+            lastCommandSent = BM70_OP_SEND_CHAR;
+            //readCommandResponse(BM70_OP_SEND_CHAR);
+            //delay(50);
             offset = 3;
         }
     }
@@ -377,8 +380,9 @@ void BM70::send(const uint8_t * data, uint8_t len)
     if (offset > 3)
     {
         write(BM70_OP_SEND_CHAR, params, offset);
-        delay1(50);
-        readCommandResponse(BM70_OP_SEND_CHAR);
-        delay1(50);
+        delay(50);
+        lastCommandSent = BM70_OP_SEND_CHAR;
+        //readCommandResponse(BM70_OP_SEND_CHAR);
+        //delay(50);
     }
 }
