@@ -1,7 +1,8 @@
 #ifndef BM70_H
 #define BM70_H
 
-#include "Arduino.h"
+#include <stdint.h>
+#include <HardwareSerial.h>
 
 #define BM70_DEFAULT_TIMEOUT          200
 #define BM70_STATUS_MAX_AGE_MS        10000

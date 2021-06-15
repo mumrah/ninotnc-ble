@@ -2,7 +2,6 @@
 #include <SoftwareSerial.h>
 #include "BM70.h"
 
-
 SoftwareSerial DebugSerial(PD6, PD7);  
 
 BM70 bm70;
@@ -32,11 +31,20 @@ void printBytes(uint8_t * bytes, size_t len)
   DebugSerial.println();
 }
 
-void rx_callback(uint8_t * buffer, uint8_t len)
+void ble_callback(uint8_t * buffer, uint8_t len)
 {
-  printBytes(buffer, len);
-  Serial1.write(buffer, len);
-  Serial1.flush();
+  if (buffer[0] == 0xC0 && buffer[len-1] == 0xC0)
+  {
+    DebugSerial.print("Writing "); DebugSerial.print(len); DebugSerial.println(" bytes to NinoTNC");
+    Serial1.write(buffer, len);
+    Serial1.flush();
+  }
+  else
+  {
+    DebugSerial.print("Skipping non-KISS data");
+    printBytes(buffer, len);
+  }
+  
 }
 
 void setup()
@@ -55,7 +63,7 @@ void setup()
   DebugSerial.begin(19200);
   DebugSerial.println("NinoTNC + BLE Setup");
 
-  bm70 = BM70(&Serial, 19200, rx_callback);
+  bm70 = BM70(&Serial, 19200, ble_callback);
   bm70.reset();
 
   Serial1.begin(57600);
