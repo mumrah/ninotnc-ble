@@ -27,7 +27,6 @@ unsigned long last_nino_read = 0L;
 uint8_t nino_rx_buffer[255]; 
 uint8_t nino_rx_pos = 0;
 
-
 uint8_t nino_tx_packet[255]; 
 uint8_t nino_tx_pos = 0;
 uint8_t nino_tx_len = 0;
@@ -61,17 +60,17 @@ void ble_callback(uint8_t * buffer, uint8_t len)
 {
   if (buffer[0] == 0xC0 && buffer[len-1] == 0xC0)
   {
-    DebugSerial.print("Writing "); DebugSerial.print(len); DebugSerial.println(" bytes to NinoTNC");
+    DebugSerial.print(F("Writing ")); DebugSerial.print(len); DebugSerial.println(F(" bytes to NinoTNC"));
     for (uint8_t i = 0; i<len; i++)
       nino_tx_packet[i] = buffer[i];
     nino_tx_len = len;
     nino_tx_pos = 0;
     UCSR1B |= (1<<UDRIE1);
-    DebugSerial.println("send");
+    DebugSerial.println(F("send"));
   }
   else
   {
-    DebugSerial.print("Skipping non-KISS data");
+    DebugSerial.print(F("Skipping non-KISS data"));
     printBytes(buffer, len);
   } 
 }
@@ -103,7 +102,7 @@ void setup()
   digitalWrite(PD5, LOW);
 
   DebugSerial.begin(19200);
-  DebugSerial.print("\n~~ NinoTNC + BLE by K4DBZ ~~\n");
+  DebugSerial.print(F("\n~~ NinoTNC + BLE by K4DBZ ~~\n"));
 
   bm70 = BM70(&Serial, 19200, ble_callback);
   bm70.reset();
@@ -119,7 +118,7 @@ void loop()
 {
   unsigned long now = millis();
   if ( (now - last_tick) > 1000) {
-    DebugSerial.println("tick");
+    DebugSerial.print(now); (F(" tick"));
     digitalWrite(PD5, HIGH);
     delay(50);
     digitalWrite(PD5, LOW);
@@ -142,7 +141,7 @@ void loop()
       }
       else if ((now - last_nino_read) > 1000)
       {
-        DEBUG_START("Timed out reading KISS from NinoTNC"); DEBUG_END();
+        DebugSerial.println(F("Timed out reading KISS from NinoTNC"));
         nino_rx_pos = 0;
       }
     }
@@ -155,7 +154,7 @@ void loop()
 
   if (bm70.status() == BM70_STATUS_IDLE)
   {
-    DebugSerial.println("Enable Advertise");
+    DebugSerial.println(F("Enable Advertise"));
     bm70.enableAdvertise();
     return;
   }
