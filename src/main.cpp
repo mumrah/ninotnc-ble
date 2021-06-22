@@ -12,19 +12,23 @@ SoftwareSerial DebugSerial(PD6, PD7);
 BM70 bm70;
 
 // Hard coded APRS status message
+/*
 const uint8_t status[43] = {
   0xc0, 0x00, 0x82, 0xa0, 0xb4, 0x84, 0x98, 0x8a, 0x80, 0x96, 0x68, 0x88, 0x84, 0xb4, 0x40, 0x01, 
   0x03, 0xf0, 0x3e, 0x4e, 0x69, 0x6e, 0x6f, 0x54, 0x4e, 0x43, 0x20, 0x42, 0x4c, 0x45, 0x20, 0x69, 
   0x73, 0x20, 0x77, 0x6f, 0x72, 0x6b, 0x69, 0x6e, 0x67, 0x21, 0xc0
 };
 const uint8_t statusLen = 43;
+*/
 
 unsigned long last_tick = 0L;
 unsigned long last_nino_read = 0L;
-uint8_t nino_read_pos = 0;
-uint8_t nino_packet[400]; 
 
-uint8_t nino_tx_packet[200]; 
+uint8_t nino_rx_buffer[255]; 
+uint8_t nino_rx_pos = 0;
+
+
+uint8_t nino_tx_packet[255]; 
 uint8_t nino_tx_pos = 0;
 uint8_t nino_tx_len = 0;
 
@@ -52,6 +56,7 @@ void USART1_Init(unsigned int ubrr)
     UCSR1C =  (3<<UCSZ00);
 }
 
+// BLE callback
 void ble_callback(uint8_t * buffer, uint8_t len)
 {
   if (buffer[0] == 0xC0 && buffer[len-1] == 0xC0)
@@ -71,11 +76,11 @@ void ble_callback(uint8_t * buffer, uint8_t len)
   } 
 }
 
+// UART Interrupts
 ISR(USART1_RX_vect)
 {
-  nino_packet[nino_read_pos++] = UDR1;
+  nino_rx_buffer[nino_rx_pos++] = UDR1;
 }
-
 ISR(USART1_UDRE_vect)
 { 
   if (nino_tx_pos < nino_tx_len)
@@ -124,23 +129,27 @@ void loop()
 
   bm70.read();
 
-  // Check if we read a data from NinoTNC
+  // Check if we read a full packet from NinoTNC
   if ((now - last_nino_read) > 200)
   {
-    if (nino_read_pos > 0 && nino_packet[nino_read_pos-1] == 0xC0) 
+    if (nino_rx_pos > 0) 
     {
-      printBytes(nino_packet, nino_read_pos);
-      //bm70.send(status, statusLen);
-      nino_read_pos = 0;
-    }
-    else if ((now - last_nino_read) > 1000)
-    {
-      DebugSerial.println("Timed out reading KISS from NinoTNC");
-      nino_read_pos = 0;
+      if (nino_rx_buffer[nino_rx_pos-1] == 0xC0)
+      {
+        printBytes(nino_rx_buffer, nino_rx_pos);
+        bm70.send(nino_rx_buffer, nino_rx_pos);
+        nino_rx_pos = 0;
+      }
+      else if ((now - last_nino_read) > 1000)
+      {
+        DEBUG_START("Timed out reading KISS from NinoTNC"); DEBUG_END();
+        nino_rx_pos = 0;
+      }
     }
     last_nino_read = now;
   }
 
+  // Manage the BLE state
   if (bm70.updateStatus())
     return;
 
