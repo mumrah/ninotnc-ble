@@ -3,6 +3,10 @@
 #include "Arduino.h"
 #include "SoftwareSerial.h"
 
+#ifndef GIT_REV
+#define GIT_REV "deadbeef"
+#endif
+
 #define BLESerial Serial
 
 #define NinoTNCSerial Serial1

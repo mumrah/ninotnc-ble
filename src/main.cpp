@@ -7,6 +7,7 @@
 #include <avr/interrupt.h>
 #include "BM70.h"
 #include "blink.h"
+#include "config.h"
 
 SoftwareSerial DebugSerial(PD6, PD7);  
 
