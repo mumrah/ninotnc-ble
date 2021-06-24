@@ -1,4 +1,4 @@
-#define FOSC 7372800L // Clock Speed
+#define FOSC 7372800L // ATMega328pb crystal frequency
 #define NINO_BAUD 57600
 #define NINO_UBRR FOSC/16/NINO_BAUD-1
 
@@ -92,26 +92,23 @@ ISR(USART1_UDRE_vect)
 }
 
 void setup()
-{
+{  
+  // Status LED
   pinMode(PD5, OUTPUT);
-
-  // Flash the indicator LED
-  digitalWrite(PD5, HIGH);
-  delay(100);
-  digitalWrite(PD5, LOW);
-  delay(100);
-  digitalWrite(PD5, HIGH);
-  delay(100);
-  digitalWrite(PD5, LOW);
+  blink_sync(2);
 
   DebugSerial.begin(19200);
-  DebugSerial.print(F("\n~~ NinoTNC + BLE by K4DBZ ~~\n"));
-  DebugSerial.println(GIT_REV);
+  DebugSerial.println(F("--------------------------------"));
+  DebugSerial.println(F("KISS BLE bridge by David Arthur, K4DBZ"));
+  DebugSerial.print(F("Git SHA: ")); DebugSerial.println(GIT_REV);
+  DebugSerial.print(F("Build Date: ")); DebugSerial.println(BUILD_DATE);
+  DebugSerial.println(F("--------------------------------"));
+
 
   bm70 = BM70(&Serial, 19200, ble_callback);
   bm70.reset();
 
-  delay(3000);
+  delay(1000);
   
   USART1_Init(NINO_UBRR);
   sei();
@@ -123,7 +120,7 @@ void loop()
   check_led_state(now);
 
   if ( (now - last_tick) > 3000) {
-    DebugSerial.print(now); (F(" tick"));
+    DebugSerial.print(now); DebugSerial.println(F(" tick"));
     blink(now, 1, false);
     last_tick = now;
   }

@@ -7,6 +7,10 @@
 #define GIT_REV "deadbeef"
 #endif
 
+#ifndef BUILD_DATE
+#define BUILD_DATE "2021-01-01T00:00:00Z"
+#endif
+
 #define BLESerial Serial
 
 #define NinoTNCSerial Serial1

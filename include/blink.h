@@ -43,6 +43,17 @@ void blink(unsigned long now_ms, uint8_t count, bool overwrite)
   }
 }
 
+void blink_sync(uint8_t count)
+{
+  while(count-- > 0)
+  {
+      digitalWrite(PD5, HIGH);
+      delay(pulse_on_ms);
+      digitalWrite(PD5, LOW);
+      delay(pulse_off_ms);
+  }
+}
+
 void check_led_state(unsigned long now_ms)
 {
   if (pulse_count > 0 && now_ms >= next_pulse_ms)
