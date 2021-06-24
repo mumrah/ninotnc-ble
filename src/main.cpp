@@ -4,8 +4,9 @@
 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
-#include "BM70.h"
 #include <avr/interrupt.h>
+#include "BM70.h"
+#include "blink.h"
 
 SoftwareSerial DebugSerial(PD6, PD7);  
 
@@ -67,6 +68,7 @@ void ble_callback(uint8_t * buffer, uint8_t len)
     nino_tx_pos = 0;
     UCSR1B |= (1<<UDRIE1);
     DebugSerial.println(F("send"));
+    blink_morse(millis(), 'T');
   }
   else
   {
@@ -103,6 +105,7 @@ void setup()
 
   DebugSerial.begin(19200);
   DebugSerial.print(F("\n~~ NinoTNC + BLE by K4DBZ ~~\n"));
+  DebugSerial.println(GIT_REV);
 
   bm70 = BM70(&Serial, 19200, ble_callback);
   bm70.reset();
@@ -111,18 +114,16 @@ void setup()
   
   USART1_Init(NINO_UBRR);
   sei();
-  //USART1_Transmit(status, statusLen);
 }
 
 void loop()
 {
   unsigned long now = millis();
-  if ( (now - last_tick) > 1000) {
+  check_led_state(now);
+
+  if ( (now - last_tick) > 3000) {
     DebugSerial.print(now); (F(" tick"));
-    digitalWrite(PD5, HIGH);
-    delay(50);
-    digitalWrite(PD5, LOW);
-    delay(50);
+    blink(now, 1, false);
     last_tick = now;
   }
 
@@ -135,6 +136,7 @@ void loop()
     {
       if (nino_rx_buffer[nino_rx_pos-1] == 0xC0)
       {
+        blink_morse(now, 'R');
         printBytes(nino_rx_buffer, nino_rx_pos);
         bm70.send(nino_rx_buffer, nino_rx_pos);
         nino_rx_pos = 0;
