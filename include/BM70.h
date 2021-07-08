@@ -96,6 +96,7 @@ public:
 	void reset();
 	bool updateStatus();
 	void enableAdvertise();
+	void disconnect();
 
 	void discoverCharacteristics(const uint8_t * serviceUUID);
 	void readCharacteristicValue(const uint8_t * serviceUUID);
@@ -114,7 +115,7 @@ private:
 	Result result;
 	uint8_t readPos;
 
-	uint64_t connectionAddress;
+	uint64_t connectionAddress; // TODO maybe remove this? is it needed?
 	uint8_t connectionHandle;
 	uint8_t lastCommandSent;
 

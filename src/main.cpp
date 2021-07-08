@@ -98,11 +98,11 @@ void setup()
   blink_sync(2);
 
   DebugSerial.begin(19200);
-  DebugSerial.println(F("--------------------------------"));
+  DebugSerial.println(F("--------------------------------------"));
   DebugSerial.println(F("KISS BLE bridge by David Arthur, K4DBZ"));
   DebugSerial.print(F("Git SHA: ")); DebugSerial.println(GIT_REV);
   DebugSerial.print(F("Build Date: ")); DebugSerial.println(BUILD_DATE);
-  DebugSerial.println(F("--------------------------------"));
+  DebugSerial.println(F("--------------------------------------"));
 
 
   bm70 = BM70(&Serial, 19200, ble_callback);

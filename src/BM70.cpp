@@ -125,6 +125,8 @@ void BM70::handleResult(Result *result)
         return;
     } 
 
+    uint8_t reason;
+
     switch (result->opCode)
     {
         case 0x70:
@@ -146,16 +148,19 @@ void BM70::handleResult(Result *result)
             else
             {
                 // failed, ignore
-                DebugSerial.print(F("BLE Connection Failed, param: ")); DebugSerial.println(result->params(0), HEX);
+                DebugSerial.print(F("BLE Connection Failed, reason: ")); DebugSerial.println(result->params(0), HEX);
                 currentStatus = BM70_STATUS_UNKNOWN;
                 delay(50);
             }
             break;
         case 0x72:
             // LE Disconnect Event
-            DebugSerial.println(F("BLE Disconnected"));
-            connectionHandle = 0x00;
-            connectionAddress = 0x00;
+            reason = result->params(0);
+            DebugSerial.print(F("BLE Disconnected, reason: ")); DebugSerial.println(reason, HEX);
+            // Don't forget the connection handle. In some cases a quick reconnect from the client
+            // seems to miss the LE Connection Complete Event (or maybe it comes after the status update)
+            //connectionHandle = 0x00;
+            //connectionAddress = 0x00;
             currentStatus = BM70_STATUS_UNKNOWN;
             break;
         case 0x80:
@@ -301,11 +306,17 @@ void BM70::reset()
     lastStatusUpdateMs = 0L;
 }
 
+void BM70::disconnect()
+{
+    write0(BM70_OP_DISCONNECT);
+    readCommandResponse(BM70_OP_DISCONNECT);
+}
+
 bool BM70::updateStatus()
 {
     if (currentStatus == BM70_STATUS_CONNECTED && connectionHandle == 0x00) {
-        DebugSerial.println(F("In connected state but no connection handle. Resetting"));
-        reset();
+        DebugSerial.println(F("In connected state but no connection handle."));
+        //disconnect();
         return true;
     }
 
