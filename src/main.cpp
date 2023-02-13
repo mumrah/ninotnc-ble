@@ -93,6 +93,7 @@ ISR(USART1_UDRE_vect)
 
 void setup()
 {  
+  cli();
   // Status LED
   pinMode(PD5, OUTPUT);
   blink_sync(2);
@@ -104,6 +105,18 @@ void setup()
   DebugSerial.print(F("Build Date: ")); DebugSerial.println(BUILD_DATE);
   DebugSerial.println(F("--------------------------------------"));
 
+  DDRE = (1 << PE3); // BM70 RST_N
+  DDRC = (1 << PC0); // BM70 P2_0
+
+  PORTC |= (1 << PC0);  // Pull P2_0 high (application mode)
+  delay(10);
+  PORTE &= ~(1 << PE3); // Pulse RST_N 
+  delay(10);
+  PORTE |= (1 << PE3);
+
+  // around 80ms seems to be the threshold, this is probably firmware
+  // dependent on the BM70, so we'll wait a bit longer for the UART
+  delay(200); 
 
   bm70 = BM70(&Serial, 19200, ble_callback);
   bm70.reset();
