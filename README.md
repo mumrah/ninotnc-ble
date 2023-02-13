@@ -16,3 +16,13 @@ PCB is shared on OSHPark https://oshpark.com/shared_projects/s0RX6naD
 
 This project is experimental and should be considered as-is. The software and board design are
 licensed under the permissive Creative Commons Share Alike.
+
+# Photos
+
+![IMG_2488 2](https://user-images.githubusercontent.com/55116/218492105-87959d4b-2ce6-4e80-bd81-f676048063d9.jpg)
+
+![IMG_2489](https://user-images.githubusercontent.com/55116/218492130-1c20ec6f-75b8-4714-a3e1-dc45aa7b9023.jpg)
+
+![IMG_5311](https://user-images.githubusercontent.com/55116/218492169-c724f344-5984-4dfa-bfe3-4c4532da6e52.jpg)
+
+![IMG_0753](https://user-images.githubusercontent.com/55116/218492350-b8926ebc-5c25-4017-8e1e-997665a8e2ad.JPG)
