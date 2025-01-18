@@ -27,10 +27,6 @@ firmware are open source licensed under the permissive MIT License.
 * Optional user-installed OLED display for packet information
 * Pass-through mode for updating NinoTNC firmware
 
-# Photos
-
-![IMG_4732](https://github.com/user-attachments/assets/819ed26d-e3d5-476c-a6b7-d64fd73c6b3c)
-
 # Use Cases
 
 ## Mobile APRS
