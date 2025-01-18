@@ -1,7 +1,8 @@
-# NinoTNC APRS Expansion Board
+# NinoTNC BLE Expansion Board
 
-This project brings robust and bi-directional APRS support to the best AX.25
-TNC on the market, the [NinoTNC](https://tarpn.net/t/nino-tnc/nino-tnc.html). 
+This project brings robust and bi-directional Bluetooth connectivity to the
+best amateur radio TNC on the market, the [NinoTNC](https://tarpn.net/t/nino-tnc/nino-tnc.html). This allows for the deployment of robust bi-directional APRS
+at a low cost and in the DIY ham spirit.
 
 The total cost for setting up an APRS mobile station using this project 
 (excluding radio and antenna system) is around $80. 
