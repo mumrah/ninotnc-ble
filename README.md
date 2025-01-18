@@ -12,7 +12,7 @@ The total cost for setting up an APRS mobile station using this project
 * Custom TNC cable (free/cheap for DIY)
 * APRS App (aprs.fi for iOS, APRSDroid for Android)
 
-[![NinoTNC BLE Intro](https://github.com/user-attachments/assets/3d8291e8-b3bb-4011-b777-15b235813887)](https://youtu.be/tUxJxJrFIYk "NinoTNC BLE Intro")
+[![NinoTNC BLE Intro](https://github.com/user-attachments/assets/3d8291e8-b3bb-4011-b777-15b235813887)](https://youtu.be/kItOS-uezck "NinoTNC BLE Intro")
 
 This project is experimental and should be considered as-is. The hardware and
 firmware are open source licensed under the permissive MIT License.
