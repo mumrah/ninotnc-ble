@@ -8,7 +8,7 @@ The total cost for setting up an APRS mobile station using this project
 (excluding radio and antenna system) is around $80. 
 
 * NinoTNC ($45 for DIY, more for pre-built)
-* NinoBLE Expansion Board ($25 for pre-built)
+* NinoBLE Expansion Board ($25 for pre-built, coming soon...)
 * Custom TNC cable (free/cheap for DIY)
 * APRS App (aprs.fi for iOS, APRSDroid for Android)
 
