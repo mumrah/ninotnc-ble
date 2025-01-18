@@ -4,6 +4,8 @@ This project brings robust and bi-directional Bluetooth connectivity to the
 best amateur radio TNC on the market, the [NinoTNC](https://tarpn.net/t/nino-tnc/nino-tnc.html). This allows for the deployment of robust bi-directional APRS
 at a low cost and in the DIY ham spirit.
 
+[![NinoTNC BLE Intro](https://github.com/user-attachments/assets/3d8291e8-b3bb-4011-b777-15b235813887)](https://youtu.be/tUxJxJrFIYk "NinoTNC BLE Intro")
+
 The total cost for setting up an APRS mobile station using this project 
 (excluding radio and antenna system) is around $80. 
 
