@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(ninoble_tests C CXX ASM)
 
-add_compile_options(-Wall -Werror -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-gnu-binary-literal -Wno-implicit-function-declaration)
+add_compile_options(-Wall -Werror -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-gnu-binary-literal -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types)
 
 add_executable(kiss_test ../kiss.c ../kiss.h test_kiss.c munit.c)
 target_include_directories(kiss_test PRIVATE
@@ -22,7 +22,7 @@ target_include_directories(shell_test PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/..
 )
 
-add_executable(ax25_test ../ax25.c ../ax25.h ../kiss.c ../kiss.h test_ax25.c munit.c)
+add_executable(ax25_test ../aprs.c ../aprs.h ../ax25.c ../ax25.h ../kiss.c ../kiss.h test_ax25.c munit.c)
 target_include_directories(ax25_test PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/..

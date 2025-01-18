@@ -10,5 +10,4 @@
 #define PASSTHRU_SW_PIN 6
 #define SSD1306_ROT 1  // Any other value will rotate the screen 180º
 
-
 #endif

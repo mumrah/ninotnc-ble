@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <pico/stdlib.h>
 #include <math.h>
 
 #include "ax25.h"
@@ -15,11 +14,60 @@
 #define APRS_TIME_2_BYTE_POS 5
 #define APRS_TIME_3_BYTE_POS 7
 
-#define APRS_LAT_BYTE_POS 10
-#define APRS_SYM_TABLE_BYTE_POS 18
-#define APRS_LON_BYTE_POS 20
-#define APRS_SYM_CODE_BYTE_POS 28
+#define APRS_LOC_NOTIME_LAT_BYTE_POS 3
+#define APRS_LOC_TIME_LAT_BYTE_POS 10
+#define APRS_LOC_NOTIME_LON_BYTE_POS 12
+#define APRS_LOC_TIME_LON_BYTE_POS 19
+
+#define APRS_TIME_SYM_TBL_BYTE_POS 18
+#define APRS_NOTIME_SYM_TBL_BYTE_POS 11
+#define APRS_TIME_SYM_CODE_BYTE_POS 28
+#define APRS_NOTIME_SYM_CODE_BYTE_POS 21
+
 #define APRS_COMMENT_BYTE_POS 29
+
+static void aprs_latitude(uint8_t offset, uint8_t * buffer, Loc * latitude) {
+    char buf[3];
+
+    memset(buf, '\0', 3);
+    memcpy(buf, &buffer[offset], 2);
+    printf("LAT DEG %s\n", buf);
+    latitude->deg = atoi(buf);
+
+    memset(buf, '\0', 3);
+    memcpy(buf, &buffer[offset + 2], 2);
+    printf("LAT MIN %s\n", buf);
+    latitude->min = atoi(buf);
+    
+    memset(buf, '\0', 3);
+    memcpy(buf, &buffer[offset + 5], 2);
+    printf("LAT SEC %s\n", buf);
+    latitude->sec = (uint8_t)(atof(buf) * 60.0 / 100.0);
+
+    latitude->north_or_east = buffer[offset + 7] == 'N';
+}
+
+static void aprs_longitude(uint8_t offset, uint8_t * buffer, Loc * longitude) {
+    char buf[4];
+
+    memset(buf, '\0', 4);
+    memcpy(buf, &buffer[offset], 3);
+    printf("LON DEG %s\n", buf);
+    longitude->deg = atoi(buf);
+
+    memset(buf, '\0', 4);
+    memcpy(buf, &buffer[offset + 3], 2);
+    printf("LON MIN %s\n", buf);
+    longitude->min = atoi(buf);
+    
+    memset(buf, '\0', 4);
+    memcpy(buf, &buffer[offset + 6], 2);
+    printf("LON SEC %s\n", buf);
+    longitude->sec = (uint8_t)(atof(buf) * 60.0 / 100.0);
+
+    longitude->north_or_east = buffer[offset + 8] == 'E';
+}
+
 
 const uint8_t status[] = {
   0xc0, 0x00, // FEND DATA
@@ -45,7 +93,7 @@ char aprs_data_type(AX25Packet * packet, uint8_t * buffer) {
 }
 
 void print_loc_dms(Loc * loc, uint8_t * buffer) {
-    sprintf(buffer, "%02d°%02d'%02d\"", loc->deg, loc->min, loc->sec);
+    sprintf((char *) buffer, "%02d°%02d'%02d\"", loc->deg, loc->min, loc->sec);
 }
 
 double loc_dd(Loc * loc) {
@@ -60,47 +108,43 @@ double loc_dd(Loc * loc) {
 
 void print_loc_dd(Loc * loc, uint8_t * buffer) {
     float dd = loc_dd(loc);
-    sprintf(buffer, "%+2.2f", dd);
+    sprintf((char *) buffer, "%+2.2f", dd);
 }
 
-void aprs_latitude(AX25Packet * packet, uint8_t * buffer, Loc * latitude) {
-    char buf[3];
-    buf[2] = '\0';
-
-    memcpy(buf, &buffer[packet->control_byte_pos + APRS_LAT_BYTE_POS], 2);
-    latitude->deg = atoi(buf);
-
-    memcpy(buf, &buffer[packet->control_byte_pos + APRS_LAT_BYTE_POS + 2], 2);
-    latitude->min = atoi(buf);
-    
-    memcpy(buf, &buffer[packet->control_byte_pos + APRS_LAT_BYTE_POS + 5], 2);
-    latitude->sec = (uint8_t)(atof(buf) * 60.0 / 100.0);
-
-    latitude->north_or_east = buffer[packet->control_byte_pos + APRS_LAT_BYTE_POS + 7] == 'N';
+void aprs_time_latitude(AX25Packet * packet, uint8_t * buffer, Loc * latitude) {
+    uint8_t offset = packet->control_byte_pos + APRS_LOC_TIME_LAT_BYTE_POS;
+    aprs_latitude(offset, buffer, latitude);
 }
 
-char aprs_symbol_table(AX25Packet * packet, uint8_t * buffer) {
-    return buffer[packet->control_byte_pos + APRS_SYM_TABLE_BYTE_POS];
+void aprs_notime_latitude(AX25Packet * packet, uint8_t * buffer, Loc * latitude) {
+    uint8_t offset = packet->control_byte_pos + APRS_LOC_NOTIME_LAT_BYTE_POS;
+    aprs_latitude(offset, buffer, latitude);
 }
 
-char aprs_symbol(AX25Packet * packet, uint8_t * buffer) {
-    return buffer[packet->control_byte_pos + APRS_SYM_CODE_BYTE_POS];
+void aprs_time_longitude(AX25Packet * packet, uint8_t * buffer, Loc * longitude) {
+    uint8_t offset = packet->control_byte_pos + APRS_LOC_TIME_LON_BYTE_POS;
+    aprs_longitude(offset, buffer, longitude);
 }
 
-void aprs_longitude(AX25Packet * packet, uint8_t * buffer, Loc * longitude) {
-    char buf[3];
-    buf[2] = '\0';
+void aprs_notime_longitude(AX25Packet * packet, uint8_t * buffer, Loc * longitude) {
+    uint8_t offset = packet->control_byte_pos + APRS_LOC_NOTIME_LON_BYTE_POS;
+    aprs_longitude(offset, buffer, longitude);
+}
 
-    memcpy(buf, &buffer[packet->control_byte_pos + APRS_LON_BYTE_POS], 2);
-    longitude->deg = atoi(buf);
+char aprs_notime_symbol_table(AX25Packet * packet, uint8_t * buffer) {
+    return buffer[packet->control_byte_pos + APRS_NOTIME_SYM_TBL_BYTE_POS];
+}
 
-    memcpy(buf, &buffer[packet->control_byte_pos + APRS_LON_BYTE_POS + 2], 2);
-    longitude->min = atoi(buf);
-    
-    memcpy(buf, &buffer[packet->control_byte_pos + APRS_LON_BYTE_POS + 5], 2);
-    longitude->sec = (uint8_t)(atof(buf) * 60.0 / 100.0);
+char aprs_time_symbol_table(AX25Packet * packet, uint8_t * buffer) {
+    return buffer[packet->control_byte_pos + APRS_TIME_SYM_TBL_BYTE_POS];
+}
 
-    longitude->north_or_east = buffer[packet->control_byte_pos + APRS_LON_BYTE_POS + 7] == 'E';
+char aprs_notime_symbol_code(AX25Packet * packet, uint8_t * buffer) {
+    return buffer[packet->control_byte_pos + APRS_NOTIME_SYM_CODE_BYTE_POS];
+}
+
+char aprs_time_symbol_code(AX25Packet * packet, uint8_t * buffer) {
+    return buffer[packet->control_byte_pos + APRS_TIME_SYM_CODE_BYTE_POS];
 }
 
 /*
@@ -115,9 +159,12 @@ uint16_t aprs_comment(AX25Packet * packet, uint8_t * buffer, uint16_t len, uint8
     return comment_len;
 }
 
-datetime_t aprs_time(AX25Packet * packet, uint8_t * buffer) {
+aprs_datetime_t aprs_time(AX25Packet * packet, uint8_t * buffer) {
     char time_type = buffer[packet->control_byte_pos + APRS_TIME_TYPE_BYTE_POS];
-    datetime_t dt;
+    aprs_datetime_t dt;
+    dt.day = 0;
+    dt.month = 0;
+    dt.year = 0;
     if (time_type == 'z') {
         // zulu DHM
     } else if (time_type == '/') {
@@ -140,7 +187,6 @@ datetime_t aprs_time(AX25Packet * packet, uint8_t * buffer) {
     return dt;
 }
 
-
 /**
  * Taken from https://stackoverflow.com/a/21623206
  * 
@@ -156,7 +202,6 @@ datetime_t aprs_time(AX25Packet * packet, uint8_t * buffer) {
 }
  */
 double loc_distance(double lat1_dd, double lon1_dd, double lat2_dd, double lon2_dd) {
-    double radius = 6371.0;
     double p =  M_PI / 180.;
 
     double a1 = 0.5;

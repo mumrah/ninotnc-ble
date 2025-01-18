@@ -182,8 +182,10 @@ void display_aprs_packet_oled(AX25Packet * packet, uint8_t * buffer, uint16_t le
             aprs_type = aprs_data_type(packet, buffer);
             printf("APRS type: %02x\n", aprs_type);
             line[3] = aprs_type;
-            datetime_t dt = aprs_time(packet, buffer);
-            sprintf(&line[7], "%02d:%02d:%02dZ", dt.hour, dt.min, dt.sec);
+            if (aprs_type == APRS_TYPE_POS_TIME_NOMSG || aprs_type == APRS_TYPE_POS_TIME_MSG) {
+                aprs_datetime_t dt = aprs_time(packet, buffer);
+                sprintf(&line[7], "%02d:%02d:%02dZ", dt.hour, dt.min, dt.sec);
+            }            
             found_aprs = true;
             break;
         case AX25_INFORMATION:
@@ -218,11 +220,20 @@ void display_aprs_packet_oled(AX25Packet * packet, uint8_t * buffer, uint16_t le
     memset(line, ' ', sizeof(line));
 
     // Parse the lat/lon
-    Loc lat;    
-    aprs_latitude(packet, buffer, &lat);
-    
-    Loc lon;
-    aprs_longitude(packet, buffer, &lon);
+    Loc lat, lon;
+    bool has_loc;
+    if (aprs_type == APRS_TYPE_POS_NOTIME_NOMSG || aprs_type == APRS_TYPE_POS_NOTIME_MSG) {
+        aprs_notime_latitude(packet, buffer, &lat);
+        aprs_notime_longitude(packet, buffer, &lon);
+        has_loc = true;
+    } else if (aprs_type == APRS_TYPE_POS_TIME_NOMSG || aprs_type == APRS_TYPE_POS_TIME_MSG) {
+        aprs_time_latitude(packet, buffer, &lat);
+        aprs_time_longitude(packet, buffer, &lon);
+        has_loc = true;
+    } else {
+        // ignore
+        has_loc = false;
+    }
     
     if (!rx) {
         // If BLE is sending a beacon, grab out callsign and position
@@ -235,7 +246,7 @@ void display_aprs_packet_oled(AX25Packet * packet, uint8_t * buffer, uint16_t le
         }
     } else {
         // If receiving a beacon, print the lat/lon, distance, and heading
-        if (aprs_type == APRS_TYPE_POS_TIME_MSG || aprs_type == APRS_TYPE_POS_NOTIME_NOMSG) {
+        if (has_loc) {
             // Print the lat/lon
             printf("lat: %d %d %d\n", lat.deg, lat.min, lat.sec);
             print_loc_dd(&lat, line);
@@ -343,12 +354,14 @@ static void ble_write_callback(uint8_t * buffer, uint16_t len) {
             // Copy the KISS frame into a separate buffer for writing to the UART
             uint16_t encoded_len = kiss_encode(&kissFrame, scratch);
             printf("Got valid KISS from BLE, sending to TNC\n");
-            if (ax25_init(&packet, kissFrame.buffer, kissFrame.len)) {
-                tx_callback(&packet, kissFrame.buffer,  kissFrame.len);
-            }
 
             uart_write_blocking(UART_ID, scratch, encoded_len);
             uart_tx_wait_blocking(UART_ID);
+
+            // decode and display the packet
+            if (ax25_init(&packet, kissFrame.buffer, kissFrame.len)) {
+                tx_callback(&packet, kissFrame.buffer,  kissFrame.len);
+            }
 
             logger_write_pcap(async_now_ms, async_now_us, "TX", kissFrame.buffer,  kissFrame.len);
             log_ax25_packet(packet, false);
@@ -377,11 +390,14 @@ static void spp_write_callback(uint8_t * buffer, uint16_t len) {
             // Copy the KISS frame into a separate buffer for writing to the UART
             uint16_t encoded_len = kiss_encode(&kissFrame, scratch);
             printf("Got valid KISS from SPP, sending to TNC\n");
-            ax25_init(&packet, kissFrame.buffer, kissFrame.len);
-            tx_callback(&packet, kissFrame.buffer,  kissFrame.len);
             
             uart_write_blocking(UART_ID, scratch, encoded_len);
             uart_tx_wait_blocking(UART_ID);
+
+            // decode and display the packet
+            if (ax25_init(&packet, kissFrame.buffer, kissFrame.len)) {
+                tx_callback(&packet, kissFrame.buffer,  kissFrame.len);
+            }
 
             logger_write_pcap(async_now_ms, async_now_us, "TX", kissFrame.buffer,  kissFrame.len);
             log_ax25_packet(packet, false);

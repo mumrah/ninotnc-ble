@@ -82,8 +82,7 @@ As KISS packets are received by the expansion board over Bluetooth, they are
 decoded and forwarded to the UART interface. Similarly, when KISS data is
 received over the UART, it is decoded and forwarded to the Bluetooth interface.
 
-An optional SD card may be installed to capture the packets as they are sent and 
-received.
+An optional SD card may be installed to capture the packets as they are sent andreceived.
 
 ## Hacking
 
@@ -94,3 +93,4 @@ this project can be used to add Bluetooth to any KISS TNC that uses a UART.
 
 The heart of this project is a RaspberryPi Pico W. Many of the GPIOs are unused,
 so there is plenty of opportunity for expansion and tinkering.
+

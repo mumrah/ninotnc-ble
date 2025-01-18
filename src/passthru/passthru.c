@@ -20,6 +20,8 @@ static IntSupplier uart_reader;
  *                                                       *
  *       ABSOLUTELY NO printf() ALLOWED IN HERE!         *
  *                                                       *
+ *            THIS WILL BRICK THE NINOTNC                *
+ *                                                       *
  *  VIOLATORS WILL BE TOSSED OUT OF THE NEAREST WINDOW.  *
  *                                                       *
  *********************************************************/

@@ -73,6 +73,7 @@ uint8_t ax25_format_call(char * buf, AX25Call * call) {
  * Partially decode an AX25 packet using the given buffer.
  */
 bool ax25_init(AX25Packet * packet, uint8_t * buffer, uint16_t len) {
+    UNUSED(len);
     uint16_t pos = 0;
     pos = ax25_decode_call(&(packet->dest_call), buffer, pos);
     pos = ax25_decode_call(&(packet->source_call), buffer, pos);

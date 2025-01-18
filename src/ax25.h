@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifndef UNUSED
+#define UNUSED(x) (void)(sizeof(x))
+#endif
+
 /**
  * Data encoded in a AX.25 TOCALL, FROMCALL, and REPEATERS
  */
