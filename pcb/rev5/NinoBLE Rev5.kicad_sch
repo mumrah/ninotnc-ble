@@ -3592,6 +3592,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C28233"
+			(at 30.48 106.68 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
+			(at 30.48 106.68 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "d188b40d-8664-4c25-9757-13c62ebdbc66")
 		)
@@ -3836,7 +3854,16 @@
 				(hide yes)
 			)
 		)
-		(property "LSCS PN" "C91145"
+		(property "LCSC Part #" "C91145"
+			(at 76.2 120.65 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
 			(at 76.2 120.65 0)
 			(effects
 				(font
@@ -3947,8 +3974,17 @@
 				(hide yes)
 			)
 		)
-		(property "JSCS PN" "C5157269"
-			(at 142.24 24.13 90)
+		(property "LCSC Part #" "C5157269"
+			(at 142.24 24.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
+			(at 142.24 24.13 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4289,8 +4325,17 @@
 				(hide yes)
 			)
 		)
-		(property "JSCS PN" "C5157269"
-			(at 144.78 24.13 90)
+		(property "LCSC Part #" "C5157269"
+			(at 144.78 24.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
+			(at 144.78 24.13 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4432,8 +4477,17 @@
 				(hide yes)
 			)
 		)
-		(property "LSCS PN" "C79175"
-			(at 179.07 99.06 90)
+		(property "LCSC Part #" "C79175"
+			(at 179.07 99.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
+			(at 179.07 99.06 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4510,7 +4564,7 @@
 				(hide yes)
 			)
 		)
-		(property "JSCS PN" "C5157269"
+		(property "Field6" ""
 			(at 147.32 24.13 90)
 			(effects
 				(font
@@ -4519,8 +4573,17 @@
 				(hide yes)
 			)
 		)
-		(property "Field6" ""
-			(at 147.32 24.13 90)
+		(property "LCSC Part #" "C5157269"
+			(at 147.32 24.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
+			(at 147.32 24.13 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4794,6 +4857,15 @@
 				(hide yes)
 			)
 		)
+		(property "Part" ""
+			(at 127 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "24"
 			(uuid "046c1d5a-f1e1-45f8-889c-92d9c0dd3546")
 		)
@@ -4987,8 +5059,17 @@
 				(hide yes)
 			)
 		)
-		(property "LSCS PN" "C221660"
-			(at 167.64 78.74 90)
+		(property "LCSC Part #" "C221660"
+			(at 167.64 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
+			(at 167.64 78.74 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5127,6 +5208,24 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 41.91 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C28233"
+			(at 41.91 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
 			(at 41.91 134.62 0)
 			(effects
 				(font
@@ -5473,6 +5572,24 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part #" "C17414"
+			(at 167.64 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
+			(at 167.64 90.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "afee8bab-02d7-480b-b84e-c40834d4d95b")
 		)
@@ -5541,7 +5658,7 @@
 				(hide yes)
 			)
 		)
-		(property "LSCS PN" "C5248081"
+		(property "Part" ""
 			(at 73.66 73.66 0)
 			(effects
 				(font
@@ -5759,6 +5876,15 @@
 				(hide yes)
 			)
 		)
+		(property "Part" ""
+			(at 87.63 24.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "14220b6b-e9e7-40ca-8756-9c13915357f4")
 		)
@@ -5818,6 +5944,24 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 41.91 124.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part #" "C17414"
+			(at 41.91 124.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
 			(at 41.91 124.46 0)
 			(effects
 				(font
@@ -5962,8 +6106,17 @@
 				(hide yes)
 			)
 		)
-		(property "JSCS PN" "C5157269"
-			(at 149.86 24.13 90)
+		(property "LCSC Part #" "C5157269"
+			(at 149.86 24.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Part" ""
+			(at 149.86 24.13 0)
 			(effects
 				(font
 					(size 1.27 1.27)

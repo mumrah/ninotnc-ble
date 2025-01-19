@@ -7,3 +7,5 @@ had slight alignment issues. If you order this board, be sure to check the pins
 for shorts.
 
 In the next revision, I will source a different part for the pogo connector.
+
+Files under the "fabrication" can be used for JLCPCB.

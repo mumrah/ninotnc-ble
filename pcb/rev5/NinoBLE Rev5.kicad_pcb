@@ -246,12 +246,25 @@
 				)
 			)
 		)
-		(property "JSCS PN" "C5157269"
+		(property "LCSC Part #" "C5157269"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "7786ba3a-4128-4cc6-b933-4bbafbec9578")
+			(uuid "6b2d5054-8bf3-48f6-ba72-93410d18af3d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "20d9455b-35f4-4d6d-aab7-9eaff91e4580")
 			(effects
 				(font
 					(size 1 1)
@@ -262,7 +275,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/e41208d1-ab28-4d7b-9312-d6e59520c46d")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr through_hole)
 		(fp_rect
 			(start -1.25 -1.25)
@@ -376,10 +389,36 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "C28233"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2ca47932-00a9-43e4-b383-92ce23f12845")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a995b205-5a38-411a-b97d-fd13104afd7a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/93c811a8-f034-4fb7-b46f-249507bbb7fb")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 0.735)
@@ -589,10 +628,36 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "C28233"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "96d2c4dd-b25c-460a-9e64-01d786141bc8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4a019a22-c0df-4cec-b6d6-d1c2dd68f366")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "C_*")
 		(path "/0c2d0181-dbfe-45cc-a7fe-408bbb5aeda6")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.261252 0.735)
@@ -803,12 +868,25 @@
 				)
 			)
 		)
-		(property "JSCS PN" "C5157269"
+		(property "LCSC Part #" "C5157269"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ab0488a9-fae7-4f0e-8428-524e79a4f586")
+			(uuid "c965c929-a33c-48ca-8050-07f67f321634")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "f34cb391-e848-4eb2-b32f-1a045a4818fc")
 			(effects
 				(font
 					(size 1 1)
@@ -819,7 +897,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/4e04a353-1f3b-4ba6-92a9-4d42511e3f21")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr through_hole)
 		(fp_rect
 			(start -1.25 -1.25)
@@ -933,12 +1011,25 @@
 				)
 			)
 		)
-		(property "LSCS PN" "C221660"
+		(property "LCSC Part #" "C221660"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "9ea27486-b509-4fff-933a-9fb902b98ae5")
+			(uuid "335c12de-b960-470c-9759-c8de6928a9f5")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "5814e23e-3d9e-45f6-8a6f-07e119a493ee")
 			(effects
 				(font
 					(size 1 1)
@@ -948,7 +1039,7 @@
 		)
 		(path "/8ce32115-06c6-4cf4-a83d-08ce88474869")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 4.6 -1.9)
@@ -1464,10 +1555,36 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "C17414"
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a3dba3a4-3d02-4f33-b51d-4615956aa7dd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "38d80403-c3c1-4401-9610-9383666e3b7e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/e16c4538-e29f-4283-961e-4aa29b196142")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.227064 0.735)
@@ -1678,19 +1795,6 @@
 				)
 			)
 		)
-		(property "JSCS PN" "C5157269"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "212291b8-678b-4bda-b697-760053eb744e")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
 		(property "Field6" ""
 			(at 0 0 0)
 			(unlocked yes)
@@ -1704,10 +1808,36 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "C5157269"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "912f1f2f-8f40-4ff9-b86b-ce82e9eefc87")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "307b5742-aa01-48a4-9ed0-c85f0914ece2")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/65a4c866-39e7-4c27-94ba-a166b01c49e5")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr through_hole)
 		(fp_rect
 			(start -1.25 -1.25)
@@ -1822,12 +1952,25 @@
 				)
 			)
 		)
-		(property "JSCS PN" "C5157269"
+		(property "LCSC Part #" "C5157269"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "01fb0ded-53ae-4445-b76e-1a7e917f5b4e")
+			(uuid "f9b8b2cc-ac33-4cb1-8b3c-839bbe8ce4f0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "2a2b0198-5bcb-4cdd-9f8f-c65142ad8e6b")
 			(effects
 				(font
 					(size 1 1)
@@ -1838,7 +1981,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/2bd194ba-962b-4057-b774-220c431e7291")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr through_hole)
 		(fp_rect
 			(start -1.25 -1.25)
@@ -1952,12 +2095,25 @@
 				)
 			)
 		)
-		(property "LSCS PN" "C79175"
+		(property "LCSC Part #" "C79175"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ac757964-3467-4c17-bb1d-7194d0e2e64e")
+			(uuid "cd5556c8-2480-408a-862a-63131c6990db")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 -90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "7ba3a60a-e473-4d7f-a485-18756eb58b17")
 			(effects
 				(font
 					(size 1 1)
@@ -1967,7 +2123,7 @@
 		)
 		(path "/610a5713-27d3-495d-8898-6e2ec9c1877b")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 2.35 1.85)
@@ -2270,10 +2426,23 @@
 				)
 			)
 		)
+		(property "Part" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "a2b54271-a2ae-4442-a475-4f0eabd957c0")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/d5b2012f-89d9-4c98-8737-c9f91cf76d5c")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 0 3)
@@ -2618,12 +2787,25 @@
 				)
 			)
 		)
-		(property "LSCS PN" "C91145"
+		(property "LCSC Part #" "C91145"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "435c0778-c9ee-4e91-a2df-3519083e4817")
+			(uuid "1ea3f906-d2d0-46cc-8be8-57ada88a2fbd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 90)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "b2ecffae-b850-4a62-93b2-e22f0dc1d22d")
 			(effects
 				(font
 					(size 1 1)
@@ -2633,7 +2815,7 @@
 		)
 		(path "/1d1345ed-065e-427d-9242-547629e3ca68")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 2.6 -8.5)
@@ -3026,10 +3208,36 @@
 				)
 			)
 		)
+		(property "LCSC Part #" "C17414"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6ce38674-a144-4286-a027-cf9a33901c75")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Part" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d7465b4b-5497-4367-bdb5-ba6f959e49ff")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/a44d92cc-d238-407d-aea5-95b0a761f4e1")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.227064 -0.735)
@@ -3239,12 +3447,12 @@
 				(justify mirror)
 			)
 		)
-		(property "LSCS PN" "C5248081"
+		(property "Part" ""
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "d7ccf633-bd79-48cb-b50b-a082084057f7")
+			(uuid "7a656a74-93b7-447f-b866-4561d60f039a")
 			(effects
 				(font
 					(size 1 1)
@@ -3256,7 +3464,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/ac886243-b1b4-401d-a0d7-e779c7e875f1")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 38 -12)
@@ -3532,9 +3740,23 @@
 				(justify mirror)
 			)
 		)
+		(property "Part" ""
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "c9737a8a-638c-4e59-b7f2-88b9a372975f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
 		(path "/85bfed7f-88ee-4461-a2b0-a3b75dd87f60")
 		(sheetname "Root")
-		(sheetfile "NinoBLE.kicad_sch")
+		(sheetfile "NinoBLE Rev5.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 10.5 25.5)
