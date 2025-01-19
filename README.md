@@ -8,9 +8,11 @@ The total cost for setting up an APRS mobile station using this project
 (excluding radio and antenna system) is around $80. 
 
 * NinoTNC ($45 for DIY, more for pre-built)
-* NinoBLE Expansion Board ($25 for pre-built)
+* NinoBLE Expansion Board ($25 for pre-built, coming soon...)
 * Custom TNC cable (free/cheap for DIY)
 * APRS App (aprs.fi for iOS, APRSDroid for Android)
+
+[![NinoTNC BLE Intro](https://github.com/user-attachments/assets/3d8291e8-b3bb-4011-b777-15b235813887)](https://youtu.be/kItOS-uezck "NinoTNC BLE Intro")
 
 This project is experimental and should be considered as-is. The hardware and
 firmware are open source licensed under the permissive MIT License.
@@ -24,10 +26,6 @@ firmware are open source licensed under the permissive MIT License.
 * Data logging to an on-board SD card
 * Optional user-installed OLED display for packet information
 * Pass-through mode for updating NinoTNC firmware
-
-# Photos
-
-![IMG_4732](https://github.com/user-attachments/assets/819ed26d-e3d5-476c-a6b7-d64fd73c6b3c)
 
 # Use Cases
 
