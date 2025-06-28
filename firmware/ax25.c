@@ -88,7 +88,7 @@ bool ax25_init(AX25Packet * packet, uint8_t * buffer, uint16_t len) {
             pos = ax25_decode_call(&(packet->repeater_call[rpt_idx]), buffer, pos);
             ax25_print_call(&(packet->repeater_call[rpt_idx]));
             rpt_idx++;
-        } while (!packet->repeater_call[rpt_idx-1].last);
+        } while (!packet->repeater_call[rpt_idx-1].last && rpt_idx < 3); // Guard against infinite loop
     }
 
     // If we find a matching "WIDE" repeater path, we replace it with our call and the C bit set, then WIDE n-1.

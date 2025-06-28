@@ -8,7 +8,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(ninoble_tests C CXX ASM)
 
-add_compile_options(-Wall -Werror -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-gnu-binary-literal -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types)
+
+# Enable more strict compiler warnings here to catch more bugs
+add_compile_options(-Wall -Werror -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-gnu-binary-literal -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types -Wno-c23-extensions)
 
 add_executable(kiss_test ../kiss.c ../kiss.h test_kiss.c munit.c)
 target_include_directories(kiss_test PRIVATE

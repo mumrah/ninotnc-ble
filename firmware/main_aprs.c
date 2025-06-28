@@ -273,7 +273,7 @@ void display_aprs_packet_oled(AX25Packet * packet, uint8_t * buffer, uint16_t le
     oled_render(&oled);
 }
 
-void display_ax25_packet_oled(AX25Packet * packet, uint8_t * buffer, bool rx) {
+void display_ax25_packet_oled(AX25Packet * packet, uint8_t * buffer, uint16_t len, bool rx) {
     oled_clear(&oled);
     if (rx) {
         oled_write_string(&oled, 0, 0, "RX");
@@ -290,7 +290,7 @@ void display_ax25_packet_oled(AX25Packet * packet, uint8_t * buffer, bool rx) {
             AX25UnnumberedFrameType u_subtype = ax25_u_subtype(packet, buffer);
             oled_write_string(&oled, 40, 0, unnumbered_frame_type_names[u_subtype]);
             AX25PidType pid_type = ax25_packet_pid_field(packet, buffer);
-            oled_write_string(&oled, 64, 0, pid_type_names[pid_type]);
+            oled_write_string(&oled, 80, 0, pid_type_names[pid_type]);
             break;
         case AX25_SUPERVISORY:
             oled_write_string(&oled, 24, 0, "S");
@@ -298,9 +298,9 @@ void display_ax25_packet_oled(AX25Packet * packet, uint8_t * buffer, bool rx) {
     }
 
     memset(line, ' ', sizeof(line));
-    uint8_t len = ax25_format_call(&line[5], &(packet->source_call));
-    line[5 + len] = ' ';
-    line[6 + len] = '>';
+    uint8_t call_len = ax25_format_call(&line[5], &(packet->source_call));
+    line[5 + call_len] = ' ';
+    line[6 + call_len] = '>';
     oled_write_string(&oled, 0, 16, line);
     memset(line, ' ', sizeof(line));
     ax25_format_call(&line[5], &(packet->dest_call));
@@ -309,15 +309,16 @@ void display_ax25_packet_oled(AX25Packet * packet, uint8_t * buffer, bool rx) {
 }
 
 void display_rx_packet(AX25Packet * packet, uint8_t * buffer, uint16_t len) {
-    display_aprs_packet_oled(packet, buffer, len, true);
+    display_ax25_packet_oled(packet, buffer, len, true);
 }
 
 void display_tx_packet(AX25Packet * packet, uint8_t * buffer, uint16_t len) {
-    display_aprs_packet_oled(packet, buffer, len, false);
+    display_ax25_packet_oled(packet, buffer, len, false);
 }
 
 
 void wifi_led_toggle(bool on) {
+    gpio_put(14, !on);
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, on);
 }
 
@@ -358,14 +359,15 @@ static void ble_write_callback(uint8_t * buffer, uint16_t len) {
             uart_write_blocking(UART_ID, scratch, encoded_len);
             uart_tx_wait_blocking(UART_ID);
 
-            // decode and display the packet
-            if (ax25_init(&packet, kissFrame.buffer, kissFrame.len)) {
-                tx_callback(&packet, kissFrame.buffer,  kissFrame.len);
+            // Only if this is a data frame, try to decode it as AX.25
+            if (kissFrame.type == KISS_DATA) {
+                if (ax25_init(&packet, kissFrame.buffer, kissFrame.len)) {
+                    tx_callback(&packet, kissFrame.buffer,  kissFrame.len);
+                }
             }
-
+            
             logger_write_pcap(async_now_ms, async_now_us, "TX", kissFrame.buffer,  kissFrame.len);
             log_ax25_packet(packet, false);
-
             kiss_init(&bleKiss, async_now_ms);
         }
     }
@@ -514,6 +516,7 @@ int run_main_loop(void) {
     sdp_init();
     
     // SPP setup
+    
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
     spp_create_sdp_record(spp_service_buffer, sdp_create_service_record_handle(), 1, "NinoTNC SPP");
     sdp_register_service(spp_service_buffer);
@@ -531,6 +534,8 @@ int run_main_loop(void) {
     // SD setup
     logger_init();
 
+    gpio_init(14);
+    gpio_set_dir(14, true);
     init_led(&led, wifi_led_toggle);
 
     async_now_ms = to_ms_since_boot(get_absolute_time());

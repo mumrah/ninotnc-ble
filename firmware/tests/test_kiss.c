@@ -174,6 +174,64 @@ MunitResult test_no_timeout(const MunitParameter params[], void* user_data_or_fi
     return MUNIT_OK;
 }
 
+MunitResult test_non_kiss(const MunitParameter params[], void* user_data_or_fixture) {
+    UNUSED(params);
+    UNUSED(user_data_or_fixture);
+    
+    KissState kiss;
+    kiss_init(&kiss, 0);
+    kiss_feed(&kiss, 0x1E, 0);
+    kiss_feed(&kiss, 0x00, 1);
+    kiss_feed(&kiss, 0x00, 1);
+    kiss_feed(&kiss, 0x00, 1);
+
+    assert_false(kiss.haveFrame);
+
+    kiss_feed(&kiss, FEND, 2);
+    kiss_feed(&kiss, KISS_DATA, 3);
+    kiss_feed(&kiss, 'H', 4);
+    kiss_feed(&kiss, 'e', 5);
+    kiss_feed(&kiss, 'l', 6);
+    kiss_feed(&kiss, 'l', 7);
+    kiss_feed(&kiss, 'o', 8);
+    kiss_feed(&kiss, FEND, 9);
+    assert_true(kiss.haveFrame);
+    
+    return MUNIT_OK;
+}
+
+MunitResult test_multiple_frames(const MunitParameter params[], void* user_data_or_fixture) {
+    UNUSED(params);
+    UNUSED(user_data_or_fixture);
+    
+    KissState kiss;
+    kiss_init(&kiss, 0);
+
+    kiss_feed(&kiss, FEND, 2);
+    kiss_feed(&kiss, KISS_DATA, 3);
+    kiss_feed(&kiss, 'H', 4);
+    kiss_feed(&kiss, 'e', 5);
+    kiss_feed(&kiss, 'l', 6);
+    kiss_feed(&kiss, 'l', 7);
+    assert_false(kiss_feed(&kiss, 'o', 8));
+    assert_true(kiss_feed(&kiss, FEND, 9));
+    assert_true(kiss.haveFrame);
+
+    KissFrame frame;
+    kiss_read(&kiss, &frame);
+    kiss_init(&kiss, 10);
+    
+    assert_false(kiss_feed(&kiss, FEND, 10));
+    kiss_feed(&kiss, KISS_DATA, 11);
+    kiss_feed(&kiss, 'H', 12);
+    kiss_feed(&kiss, 'e', 13);
+    kiss_feed(&kiss, 'l', 14);
+    kiss_feed(&kiss, 'l', 15);
+    assert_false(kiss_feed(&kiss, 'o', 16));
+    assert_true(kiss_feed(&kiss, FEND, 17));
+    
+    return MUNIT_OK;
+}
 
 
 MunitTest tests[] = {
@@ -220,6 +278,22 @@ MunitTest tests[] = {
   {
     "/test_timeout", /* name */
     test_timeout, /* test */
+    NULL, /* setup */
+    NULL, /* tear_down */
+    MUNIT_TEST_OPTION_NONE, /* options */
+    NULL /* parameters */
+  },
+  {
+    "/test_non_kiss", /* name */
+    test_non_kiss, /* test */
+    NULL, /* setup */
+    NULL, /* tear_down */
+    MUNIT_TEST_OPTION_NONE, /* options */
+    NULL /* parameters */
+  },
+  {
+    "/test_multiple_frames", /* name */
+    test_multiple_frames, /* test */
     NULL, /* setup */
     NULL, /* tear_down */
     MUNIT_TEST_OPTION_NONE, /* options */
