@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "btstack.h"
+#include "pico/multicore.h"
 
 #include "bt.h"
 #include "ninoble_gatt_services.h"
@@ -23,11 +24,13 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // Characteristic KTS_RX_CHAR_UUID 00000003-ba2a-46c9-ae49-01b0961f68bb
 // This characteristic is used for receiving packets from the TNC over UART and forwarding to
 // the BLE client.
-static uint8_t     char_rx_value[400];                 // This buffer is also used for sending to SPP
-static uint16_t    char_rx_value_len = 0;
-static bool        char_rx_value_sending = false;
-static uint16_t    char_rx_client_configuration;
-static char *      char_rx_user_description = "rx";
+static uint8_t              char_rx_value[400];  // This buffer is also used for sending to SPP
+static volatile uint16_t    char_rx_value_len = 0;
+static bool                 char_rx_value_sending = false;
+static uint16_t             char_rx_client_configuration;
+static char *               char_rx_user_description = "rx";
+static mutex_t              rx_lock;  // Protects char_rx_value_len and char_rx_value
+
 
 // Method to call when we connect/disconnect BLE
 static ConnectionCallback ble_con_callback;
@@ -35,9 +38,11 @@ static ConnectionCallback ble_con_callback;
 
 // Characteristic KTS_TX_CHAR_UUID 00000002-ba2a-46c9-ae49-01b0961f68bb
 // This characteristic is used for transmitting packets to the TNC.
-uint8_t     char_tx_value[400];
-uint16_t    char_tx_value_len = 0;
-char *      char_tx_user_description = "tx";
+uint8_t             char_tx_value[400];
+volatile uint16_t   char_tx_value_len = 0;
+char *              char_tx_user_description = "tx";
+static mutex_t      tx_lock;  // Protects char_tx_value_len and char_tx_value
+
 
 // SPP
 static uint16_t  rfcomm_channel_id;
@@ -256,17 +261,21 @@ int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, 
     }
 
     if (att_handle == ATT_CHARACTERISTIC_00000002_ba2a_46c9_ae49_01b0961f68bb_01_VALUE_HANDLE) {
-		if (char_tx_value_len != 0) {
-            printf("Ignoring TX packet from BLE since we have one inflight. Data was:\n");
+		// When handling new packets from the BLE connection, first obtain a lock on the 
+        // char_tx_value buffer. If there is room in the buffer, copy in the packet.
+        mutex_enter_blocking(&tx_lock);
+        if (char_tx_value_len + buffer_size >= 400) {
+            printf("Ignoring TX packet from BLE since our buffer is full. Data was:\n");
             printf_hexdump(buffer, buffer_size);
             printf("\n");
         } else {
-            memcpy(char_tx_value, buffer, buffer_size);
-            char_tx_value_len = buffer_size;
+            memcpy(&char_tx_value[char_tx_value_len], buffer, buffer_size);
+            char_tx_value_len += buffer_size;
             printf("TX BLE -> TNC:\n");
-            printf_hexdump(char_tx_value, buffer_size);
+            printf_hexdump(buffer, buffer_size);
             printf("\n");
         }
+        mutex_exit(&tx_lock);
     }
     
     return 0;
@@ -277,6 +286,10 @@ int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, 
  *****************************/
 
 void init_ble(ConnectionCallback con_callback) {
+    // Initialize locks
+    mutex_init(&rx_lock);
+    mutex_init(&tx_lock);
+
     // BLE init
     att_server_init(profile_data, att_read_callback, att_write_callback);    
 
@@ -310,6 +323,7 @@ bool has_connection() {
  * Copy the buffer into the BLE RX characteristic and notify BTStack that data should be sent to the client.
  */
 void handle_tnc_rx_data(uint8_t * buffer, uint8_t len) {
+    mutex_enter_blocking(&rx_lock);
     if (char_rx_value_len > 0) {
         // Check in-flight send to client
         printf("Not sending RX'd packet due to in-flight packet. Packet was:\n");
@@ -333,6 +347,7 @@ void handle_tnc_rx_data(uint8_t * buffer, uint8_t len) {
         char_rx_value_len = len;
         rfcomm_request_can_send_now_event(rfcomm_channel_id);
     }
+    mutex_exit(&rx_lock);
 }
 
 /*
@@ -363,6 +378,9 @@ Unhandled event 87  RFCOMM_EVENT_REMOTE_MODEM_STATUS
 RFCOMM channel open succeeded. New RFCOMM Channel ID 2, max frame size 990
 */
 
+/**
+ * Return the number of bytes the TX buffer has waiting.
+ */
 bool ble_has_tx_data() {
     return char_tx_value_len > 0;
 }
@@ -371,8 +389,12 @@ bool ble_has_tx_data() {
  * Call the given callback with the TX characteristic data
  */
 int handle_ble_tx_data(BlockingTxCallback ble_callback) {
+    mutex_enter_blocking(&tx_lock);
     uint16_t len = char_tx_value_len;
-    ble_callback(char_tx_value, len);
-    char_tx_value_len = 0;
+    if (len > 0) {
+        ble_callback(char_tx_value, len);
+        char_tx_value_len = 0;
+    }
+    mutex_exit(&tx_lock);
     return len;
 }

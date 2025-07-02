@@ -37,6 +37,8 @@
     "raspberry-pi-pico.cmakePath": "${HOME}/.pico-sdk/cmake/v3.29.9/bin/cmake",
     "raspberry-pi-pico.ninjaPath": "${HOME}/.pico-sdk/ninja/v1.12.1/ninja",
     "files.associations": {
-        "ax25.h": "c"
+        "ax25.h": "c",
+        "btstack.h": "c",
+        "multicore.h": "c"
     }
 }
